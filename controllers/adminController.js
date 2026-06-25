@@ -562,3 +562,93 @@ exports.deleteDocument = async (req, res) => {
     res.redirect('/admin/documents');
   } catch (e) { req.flash('error', 'Failed.'); res.redirect('/admin/documents'); }
 };
+
+// ── PDF-ONLY TEST UPLOAD ───────────────────────────────────────────────────────
+// Creates a test from uploaded PDFs (question paper + model answers).
+// 1 question per page convention: page count of question PDF = question count.
+exports.uploadPdfTest = async (req, res) => {
+  try {
+    if (!req.files?.questionPdf) {
+      req.flash('error', 'Question paper PDF is required.');
+      return res.redirect('/admin/tests/create');
+    }
+
+    const { title, description, duration, negativeMarking, startTime, endTime,
+            instructions, groupIds, course, subject, marksPerQuestion } = req.body;
+
+    if (!title || !title.trim()) {
+      req.flash('error', 'Test title is required.');
+      return res.redirect('/admin/tests/create');
+    }
+
+    // Save Question PDF
+    const qFname = `q_${Date.now()}.pdf`;
+    const questionPdfPath = '/uploads/pdfs/' + qFname;
+    const qBuf = req.files.questionPdf.data;
+    fs.writeFileSync(path.join(PDF_DIR, qFname), qBuf);
+
+    // Save Solution / Model Answers PDF (optional)
+    let solutionPdfPath = null;
+    if (req.files?.solutionPdf) {
+      const sFname = `s_${Date.now()}.pdf`;
+      solutionPdfPath = '/uploads/pdfs/' + sFname;
+      fs.writeFileSync(path.join(PDF_DIR, sFname), req.files.solutionPdf.data);
+    }
+
+    // Count pages in question PDF by scanning /Type /Page markers
+    let pdfPageCount = 0;
+    try {
+      const pdfStr = qBuf.toString('latin1');
+      const pageMatches = pdfStr.match(/\/Type\s*\/Page[^s]/g);
+      pdfPageCount = pageMatches ? pageMatches.length : 0;
+      if (!pdfPageCount) {
+        const countMatch = pdfStr.match(/\/Count\s+(\d+)/);
+        pdfPageCount = countMatch ? parseInt(countMatch[1]) : 0;
+      }
+    } catch (_) { pdfPageCount = 0; }
+
+    const mpq = parseFloat(marksPerQuestion) || 1;
+    const totalMarks = pdfPageCount > 0 ? pdfPageCount * mpq : mpq;
+
+    const test = await Test.create({
+      title: title.trim(),
+      description: description || null,
+      duration: parseInt(duration) || 180,
+      negativeMarking: parseFloat(negativeMarking) || 0.25,
+      passingMarks: null,
+      shuffleQuestions: false,
+      shuffleOptions: false,
+      startTime: startTime || null,
+      endTime: endTime || null,
+      instructions: instructions || null,
+      totalMarks,
+      createdBy: req.session.user.id,
+      status: 'draft',
+      course: course || null,
+      subject: subject || null,
+      topic: null,
+      subtopic: null,
+      marksPerQuestion: mpq,
+      questionPdfPath,
+      solutionPdfPath,
+      autoSubmitOnViolation: req.body.autoSubmitOnViolation === 'on',
+      maxTabSwitches: parseInt(req.body.maxTabSwitches) || 3,
+      maxFocusLosses: parseInt(req.body.maxFocusLosses) || 5,
+      blockCopyPaste: req.body.blockCopyPaste !== 'off',
+      requireFullscreen: req.body.requireFullscreen === 'on',
+    });
+
+    const groups = Array.isArray(groupIds) ? groupIds : (groupIds ? [groupIds] : []);
+    for (const gId of groups) await TestGroup.create({ testId: test.id, groupId: gId });
+
+    const pageInfo = pdfPageCount > 0
+      ? ` Detected ${pdfPageCount} page(s) — ${pdfPageCount} question(s), ${totalMarks} total marks.`
+      : '';
+    req.flash('success', `PDF test "${test.title}" created!${pageInfo}${solutionPdfPath ? ' Model answers PDF attached.' : ''}`);
+    res.redirect(`/admin/tests/${test.id}`);
+  } catch (e) {
+    console.error('uploadPdfTest error:', e);
+    req.flash('error', 'Failed to create PDF test: ' + e.message);
+    res.redirect('/admin/tests/create');
+  }
+};

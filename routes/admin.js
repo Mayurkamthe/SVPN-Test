@@ -40,11 +40,12 @@ router.delete('/questions/:id',       ...guard, c.deleteQuestion);
 router.post('/questions/:id/delete',  ...guard, c.deleteQuestion);
 
 // Tests
-router.get('/tests',            ...guard, c.getTests);
-router.get('/tests/create',     ...guard, c.getCreateTest);
-router.post('/tests',           ...guard, c.createTest);
-router.get('/tests/:id',        ...guard, c.getTestDetail);
-router.post('/tests/:id/publish',...guard, c.publishTest);
+router.get('/tests',                  ...guard, c.getTests);
+router.get('/tests/create',           ...guard, c.getCreateTest);
+router.post('/tests',                 ...guard, c.createTest);
+router.post('/tests/upload-pdf',      ...guard, c.uploadPdfTest);
+router.get('/tests/:id',              ...guard, c.getTestDetail);
+router.post('/tests/:id/publish',     ...guard, c.publishTest);
 
 // Results
 router.get('/results',        ...guard, c.getAllResults);
