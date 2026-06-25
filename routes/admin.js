@@ -43,7 +43,8 @@ router.post('/questions/:id/delete',  ...guard, c.deleteQuestion);
 router.get('/tests',                  ...guard, c.getTests);
 router.get('/tests/create',           ...guard, c.getCreateTest);
 router.post('/tests',                 ...guard, c.createTest);
-router.post('/tests/upload-pdf',      ...guard, c.uploadPdfTest);
+router.post('/tests/upload-pdf',           ...guard, c.uploadPdfTest);
+router.get('/tests/template/pdf',          ...guard, c.downloadPdfTestTemplate);
 router.get('/tests/:id',              ...guard, c.getTestDetail);
 router.post('/tests/:id/publish',     ...guard, c.publishTest);
 

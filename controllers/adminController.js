@@ -652,3 +652,217 @@ exports.uploadPdfTest = async (req, res) => {
     res.redirect('/admin/tests/create');
   }
 };
+
+// ── PDF QUESTION TEMPLATE DOWNLOAD ────────────────────────────────────────────
+// Generates a sample question paper PDF (5 sample questions, 1 per page)
+// demonstrating: text-only questions, and questions with image placeholders.
+exports.downloadPdfTestTemplate = (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=question_paper_template.pdf');
+    doc.pipe(res);
+
+    const W = 595.28; // A4 width pts
+    const pageW = W - 100; // usable width (margin 50 each side)
+
+    // ── Helper: draw page header ──────────────────────────────────────────────
+    const pageHeader = (qNum, total, type) => {
+      // Top bar
+      doc.rect(50, 40, pageW, 28).fill('#1e3a5f');
+      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold')
+         .text(`SVPN TEST  ·  Question ${qNum} of ${total}`, 58, 49)
+         .text(type, 50, 49, { width: pageW, align: 'right' });
+      doc.fillColor('#1e3a5f').fontSize(7).font('Helvetica')
+         .text('⚠  1 QUESTION PER PAGE  —  Do not merge pages', 50, 74, { width: pageW, align: 'center' });
+      doc.moveTo(50, 84).lineTo(W - 50, 84).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+    };
+
+    // ── Helper: MCQ options block ─────────────────────────────────────────────
+    const drawOptions = (opts, startY) => {
+      const labels = ['A', 'B', 'C', 'D'];
+      let y = startY;
+      opts.forEach((opt, i) => {
+        doc.rect(50, y, 14, 14).strokeColor('#94a3b8').lineWidth(0.8).stroke();
+        doc.fillColor('#374151').fontSize(11).font('Helvetica-Bold')
+           .text(labels[i] + '.', 68, y + 1);
+        doc.font('Helvetica').fillColor('#1f2937')
+           .text(opt, 88, y + 1, { width: pageW - 38 });
+        y = doc.y + 6;
+      });
+      return y;
+    };
+
+    // ── Helper: answer key box ────────────────────────────────────────────────
+    const answerBox = (answer, explanation) => {
+      const y = doc.y + 14;
+      doc.rect(50, y, pageW, explanation ? 56 : 26).fill('#f0fdf4').stroke();
+      doc.fillColor('#166534').fontSize(9).font('Helvetica-Bold')
+         .text(`✔  Correct Answer: (${answer})`, 58, y + 7);
+      if (explanation) {
+        doc.fillColor('#374151').font('Helvetica').fontSize(8.5)
+           .text(`Explanation: ${explanation}`, 58, y + 22, { width: pageW - 16 });
+      }
+      // Footer note
+      doc.fillColor('#94a3b8').fontSize(7).font('Helvetica')
+         .text('— END OF QUESTION —', 50, doc.page.height - 50, { width: pageW, align: 'center' });
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PAGE 1 — Text-only question
+    // ═══════════════════════════════════════════════════════════════════════════
+    pageHeader(1, 5, 'TEXT QUESTION');
+    doc.moveDown(0.5);
+    doc.fillColor('#1e3a5f').fontSize(10).font('Helvetica-Bold')
+       .text('SUBJECT: Physics   |   TOPIC: Laws of Motion   |   DIFFICULTY: Medium   |   MARKS: 2', 50, 95, { width: pageW });
+    doc.moveTo(50, doc.y + 2).lineTo(W - 50, doc.y + 2).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.moveDown(0.8);
+    doc.fillColor('#111827').fontSize(12.5).font('Helvetica-Bold')
+       .text('Q1.  A body of mass 5 kg is moving with a velocity of 10 m/s. A force of 20 N acts on it for 3 seconds in the direction of motion. What is the final velocity of the body?', 50, doc.y, { width: pageW });
+    doc.moveDown(1);
+    drawOptions([
+      '25 m/s',
+      '22 m/s',
+      '20 m/s',
+      '30 m/s',
+    ], doc.y);
+    answerBox('B', 'Using v = u + at, a = F/m = 20/5 = 4 m/s². v = 10 + 4×3 = 22 m/s');
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PAGE 2 — Question with embedded image placeholder
+    // ═══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    pageHeader(2, 5, 'QUESTION WITH DIAGRAM');
+    doc.moveDown(0.5);
+    doc.fillColor('#1e3a5f').fontSize(10).font('Helvetica-Bold')
+       .text('SUBJECT: Physics   |   TOPIC: Optics   |   DIFFICULTY: Hard   |   MARKS: 3', 50, 95, { width: pageW });
+    doc.moveTo(50, doc.y + 2).lineTo(W - 50, doc.y + 2).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.moveDown(0.8);
+    doc.fillColor('#111827').fontSize(12.5).font('Helvetica-Bold')
+       .text('Q2.  Refer to the ray diagram shown below. Identify the type of lens and the nature of the image formed:', 50, doc.y, { width: pageW });
+    doc.moveDown(0.8);
+
+    // ── Image placeholder box (simulates an embedded diagram) ─────────────────
+    const imgBoxY = doc.y;
+    const imgBoxH = 130;
+    doc.rect(50, imgBoxY, pageW, imgBoxH).fill('#f8fafc').strokeColor('#94a3b8').lineWidth(1).stroke();
+    // Dashed diagonal lines to show "image area"
+    doc.moveTo(50, imgBoxY).lineTo(50 + pageW, imgBoxY + imgBoxH).strokeColor('#cbd5e1').lineWidth(0.5).dash(4,{space:4}).stroke();
+    doc.moveTo(50 + pageW, imgBoxY).lineTo(50, imgBoxY + imgBoxH).stroke();
+    doc.undash();
+    // Label inside placeholder
+    doc.fillColor('#64748b').fontSize(11).font('Helvetica-Bold')
+       .text('[ Diagram / Image Area ]', 50, imgBoxY + imgBoxH / 2 - 18, { width: pageW, align: 'center' });
+    doc.fillColor('#94a3b8').fontSize(8.5).font('Helvetica')
+       .text('Place your question diagram here (jpg/png embedded in the PDF)', 50, imgBoxY + imgBoxH / 2, { width: pageW, align: 'center' });
+    doc.fillColor('#64748b').fontSize(8).font('Helvetica-Oblique')
+       .text('Tip: Insert image using any PDF editor (Adobe, LibreOffice Draw, Canva, etc.)', 50, imgBoxY + imgBoxH / 2 + 16, { width: pageW, align: 'center' });
+
+    doc.y = imgBoxY + imgBoxH + 12;
+    drawOptions([
+      'Convex lens; real and inverted image',
+      'Concave lens; virtual and erect image',
+      'Convex lens; virtual and erect image',
+      'Concave lens; real and inverted image',
+    ], doc.y);
+    answerBox('A', 'A convex (converging) lens forms a real, inverted image when the object is beyond F.');
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PAGE 3 — Chemistry text question
+    // ═══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    pageHeader(3, 5, 'TEXT QUESTION');
+    doc.moveDown(0.5);
+    doc.fillColor('#1e3a5f').fontSize(10).font('Helvetica-Bold')
+       .text('SUBJECT: Chemistry   |   TOPIC: Chemical Bonding   |   DIFFICULTY: Easy   |   MARKS: 1', 50, 95, { width: pageW });
+    doc.moveTo(50, doc.y + 2).lineTo(W - 50, doc.y + 2).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.moveDown(0.8);
+    doc.fillColor('#111827').fontSize(12.5).font('Helvetica-Bold')
+       .text('Q3.  The bond angle in a water molecule (H₂O) is approximately:', 50, doc.y, { width: pageW });
+    doc.moveDown(1);
+    drawOptions(['90°', '109.5°', '104.5°', '120°'], doc.y);
+    answerBox('C', 'H₂O has 2 lone pairs on oxygen which compress the bond angle to ~104.5°.');
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PAGE 4 — Question with structural formula placeholder
+    // ═══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    pageHeader(4, 5, 'QUESTION WITH STRUCTURE / IMAGE');
+    doc.moveDown(0.5);
+    doc.fillColor('#1e3a5f').fontSize(10).font('Helvetica-Bold')
+       .text('SUBJECT: Chemistry   |   TOPIC: Organic Chemistry   |   DIFFICULTY: Medium   |   MARKS: 2', 50, 95, { width: pageW });
+    doc.moveTo(50, doc.y + 2).lineTo(W - 50, doc.y + 2).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.moveDown(0.8);
+    doc.fillColor('#111827').fontSize(12.5).font('Helvetica-Bold')
+       .text('Q4.  The structural formula shown below belongs to which class of organic compound?', 50, doc.y, { width: pageW });
+    doc.moveDown(0.8);
+
+    // Structure placeholder
+    const sBoxY = doc.y;
+    const sBoxH = 110;
+    doc.rect(50, sBoxY, pageW, sBoxH).fill('#fffbeb').strokeColor('#fbbf24').lineWidth(1).stroke();
+    doc.moveTo(50, sBoxY).lineTo(50 + pageW, sBoxY + sBoxH).strokeColor('#fde68a').lineWidth(0.5).dash(4,{space:4}).stroke();
+    doc.moveTo(50 + pageW, sBoxY).lineTo(50, sBoxY + sBoxH).stroke();
+    doc.undash();
+    doc.fillColor('#92400e').fontSize(11).font('Helvetica-Bold')
+       .text('[ Structural Formula / Chemical Structure Image ]', 50, sBoxY + sBoxH / 2 - 16, { width: pageW, align: 'center' });
+    doc.fillColor('#b45309').fontSize(8.5).font('Helvetica')
+       .text('Embed the structural image here using a PDF editor before distributing', 50, sBoxY + sBoxH / 2 + 4, { width: pageW, align: 'center' });
+
+    doc.y = sBoxY + sBoxH + 12;
+    drawOptions(['Alcohol', 'Aldehyde', 'Ketone', 'Carboxylic Acid'], doc.y);
+    answerBox('D', 'The –COOH functional group identifies a carboxylic acid.');
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PAGE 5 — Maths / Biology text question
+    // ═══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    pageHeader(5, 5, 'TEXT QUESTION');
+    doc.moveDown(0.5);
+    doc.fillColor('#1e3a5f').fontSize(10).font('Helvetica-Bold')
+       .text('SUBJECT: Mathematics   |   TOPIC: Integration   |   DIFFICULTY: Hard   |   MARKS: 4', 50, 95, { width: pageW });
+    doc.moveTo(50, doc.y + 2).lineTo(W - 50, doc.y + 2).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    doc.moveDown(0.8);
+    doc.fillColor('#111827').fontSize(12.5).font('Helvetica-Bold')
+       .text('Q5.  Evaluate: ∫ (2x³ + 3x² − x + 5) dx', 50, doc.y, { width: pageW });
+    doc.moveDown(1);
+    drawOptions([
+      '(x⁴/2) + x³ − (x²/2) + 5x + C',
+      '(x⁴/2) + x³ + (x²/2) + 5x + C',
+      '2x⁴ + 3x³ − x² + 5x + C',
+      'x⁴ + x³ − x² + 5 + C',
+    ], doc.y);
+    answerBox('A', 'Integrate term by term: ∫2x³dx = x⁴/2, ∫3x²dx = x³, ∫−x dx = −x²/2, ∫5dx = 5x.');
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Final instructions page (not a question page — for admin reference)
+    // ═══════════════════════════════════════════════════════════════════════════
+    doc.addPage();
+    doc.rect(50, 40, pageW, 32).fill('#1e3a5f');
+    doc.fillColor('#ffffff').fontSize(13).font('Helvetica-Bold')
+       .text('PDF Question Paper — Format Guide', 58, 50);
+    doc.moveDown(2);
+
+    const rules = [
+      ['1 Question Per Page', 'Every page of the question PDF must contain exactly ONE question. The system counts PDF pages to determine the total number of questions.'],
+      ['Images / Diagrams', 'For questions with diagrams, structural formulas, graphs, or images — embed the image directly into the page using a PDF editor (Adobe Acrobat, LibreOffice Draw, Canva, etc.). The system will display the full PDF page to students, so images render automatically.'],
+      ['Model Answers PDF', 'Upload a separate PDF for model answers / solution key. This file is stored securely and is only visible to admins. 1 solution per page is recommended but not required.'],
+      ['Marks Per Question', 'Set "Marks Per Question" in the upload form. All questions are assumed equal marks. Total marks = pages × marks per question.'],
+      ['Supported PDF Size', 'Maximum 20 MB per PDF file. Use compressed images inside the PDF to keep file size small.'],
+      ['Page Order', 'Questions are displayed to students in page order (Page 1 = Q1, Page 2 = Q2, ...). Reorder pages in your PDF editor before uploading if needed.'],
+    ];
+
+    rules.forEach(([title, desc]) => {
+      doc.fillColor('#1e3a5f').fontSize(11).font('Helvetica-Bold').text('▸  ' + title, 50, doc.y);
+      doc.fillColor('#374151').fontSize(10).font('Helvetica').text(desc, 65, doc.y + 2, { width: pageW - 15 });
+      doc.moveDown(1.2);
+    });
+
+    doc.end();
+  } catch (e) {
+    console.error('downloadPdfTestTemplate error:', e);
+    res.status(500).send('Template generation failed: ' + e.message);
+  }
+};
