@@ -9,11 +9,11 @@ exports.getDashboard = async (req, res) => {
   try {
     const studentId = req.session.user.id;
 
-    // Get student's groups
+    // ── Group memberships ─────────────────────────────────────────────────
     const groupMemberships = await GroupMember.findAll({ where: { userId: studentId, role: 'student' } });
     const groupIds = groupMemberships.map(gm => gm.groupId);
 
-    // Get tests assigned to those groups (guard empty array — Op.in([]) crashes MySQL)
+    // ── Available tests ───────────────────────────────────────────────────
     let availableTests = [];
     if (groupIds.length > 0) {
       const testGroups = await TestGroup.findAll({ where: { groupId: { [Op.in]: groupIds } } });
@@ -21,44 +21,113 @@ exports.getDashboard = async (req, res) => {
       if (testIds.length > 0) {
         availableTests = await Test.findAll({
           where: { id: { [Op.in]: testIds }, status: { [Op.in]: ['published', 'active'] } },
-          order: [['createdAt', 'DESC']],
+          order: [['startTime', 'ASC'], ['createdAt', 'DESC']],
         });
       }
     }
 
-    // Completed tests
-    const completedResults = await Result.findAll({
+    // ── All completed results (no limit — needed for analytics) ───────────
+    const allResults = await Result.findAll({
       where: { studentId, status: { [Op.in]: ['submitted', 'auto_submitted'] } },
-      include: [{ model: Test, as: 'test', attributes: ['title', 'totalMarks'] }],
+      include: [{ model: Test, as: 'test', attributes: ['id', 'title', 'totalMarks', 'subject', 'course', 'duration'] }],
       order: [['submittedAt', 'DESC']],
-      limit: 5,
     });
 
-    const completedTestIds = completedResults.map(r => r.testId);
-    // Also exclude in-progress (already started)
+    // ── In-progress tests ─────────────────────────────────────────────────
     const inProgressResults = await Result.findAll({ where: { studentId, status: 'in_progress' }, attributes: ['testId'] });
     const inProgressTestIds = inProgressResults.map(r => r.testId);
-    const nonPendingIds = new Set([...completedTestIds, ...inProgressTestIds]);
-    const pendingTests = availableTests.filter(t => !nonPendingIds.has(t.id));
+    const completedTestIds  = allResults.map(r => r.testId);
+    const nonPendingIds     = new Set([...completedTestIds, ...inProgressTestIds]);
+    const pendingTests      = availableTests.filter(t => !nonPendingIds.has(t.id));
 
-    // Unread notifications
+    // ── Notifications ─────────────────────────────────────────────────────
     const notifications = await Notification.findAll({
       where: { userId: studentId, isRead: false },
       order: [['createdAt', 'DESC']],
-      limit: 5,
+      limit: 8,
     });
 
+    // ── Performance chart data (last 10 results chronological) ───────────
+    const chartResults = [...allResults].reverse().slice(-10);
+    const chartData = chartResults.map(r => ({
+      label: r.test?.title ? r.test.title.substring(0, 18) + (r.test.title.length > 18 ? '…' : '') : 'Test',
+      pct:   r.totalMarks > 0 ? parseFloat(((r.score / r.totalMarks) * 100).toFixed(1)) : 0,
+      score: r.score,
+      total: r.totalMarks,
+      date:  r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '',
+    }));
+
+    // ── Subject-wise performance breakdown ────────────────────────────────
+    const subjectMap = {};
+    allResults.forEach(r => {
+      const subj = r.test?.subject || 'General';
+      if (!subjectMap[subj]) subjectMap[subj] = { correct: 0, total: 0, marks: 0, maxMarks: 0, count: 0 };
+      subjectMap[subj].marks    += r.score;
+      subjectMap[subj].maxMarks += r.totalMarks;
+      subjectMap[subj].correct  += r.correctAnswers || 0;
+      subjectMap[subj].total    += (r.correctAnswers || 0) + (r.wrongAnswers || 0) + (r.skippedAnswers || 0);
+      subjectMap[subj].count++;
+    });
+    const subjectStats = Object.entries(subjectMap).map(([name, d]) => ({
+      name,
+      pct: d.maxMarks > 0 ? parseFloat(((d.marks / d.maxMarks) * 100).toFixed(1)) : 0,
+      count: d.count,
+      marks: d.marks,
+      maxMarks: d.maxMarks,
+    })).sort((a, b) => b.pct - a.pct);
+
+    // ── Best rank & percentile ────────────────────────────────────────────
+    const bestResult = allResults.reduce((best, r) => {
+      const pct = r.totalMarks > 0 ? (r.score / r.totalMarks) * 100 : 0;
+      const bpct = best ? (best.totalMarks > 0 ? (best.score / best.totalMarks) * 100 : 0) : -1;
+      return pct > bpct ? r : best;
+    }, null);
+
+    // ── Average score ─────────────────────────────────────────────────────
+    const avgScore = allResults.length
+      ? parseFloat((allResults.reduce((s, r) => s + (r.totalMarks > 0 ? (r.score / r.totalMarks) * 100 : 0), 0) / allResults.length).toFixed(1))
+      : 0;
+
+    // ── Score trend (up/down vs previous) ────────────────────────────────
+    let scoreTrend = 'neutral';
+    if (allResults.length >= 2) {
+      const last  = allResults[0].totalMarks > 0 ? (allResults[0].score / allResults[0].totalMarks) * 100 : 0;
+      const prev  = allResults[1].totalMarks > 0 ? (allResults[1].score / allResults[1].totalMarks) * 100 : 0;
+      scoreTrend  = last > prev ? 'up' : last < prev ? 'down' : 'neutral';
+    }
+
+    // ── Accuracy ─────────────────────────────────────────────────────────
+    const totalCorrect  = allResults.reduce((s, r) => s + (r.correctAnswers || 0), 0);
+    const totalAttempted = allResults.reduce((s, r) => s + (r.correctAnswers || 0) + (r.wrongAnswers || 0), 0);
+    const accuracy = totalAttempted > 0 ? parseFloat(((totalCorrect / totalAttempted) * 100).toFixed(1)) : 0;
+
+    // ── Recent 5 for the table ─────────────────────────────────────────────
+    const completedResults = allResults.slice(0, 5);
+
+    // ── Upcoming test (nearest startTime in future) ───────────────────────
+    const now = new Date();
+    const upcomingTest = pendingTests.find(t => t.startTime && new Date(t.startTime) > now) || null;
+
     res.render('student/dashboard', {
-      title: 'Student Dashboard',
+      title: 'My Dashboard',
       pendingTests,
       completedResults,
+      allResultsCount: allResults.length,
       notifications,
+      chartData: JSON.stringify(chartData),
+      subjectStats,
+      upcomingTest,
+      bestResult,
       stats: {
-        pending: pendingTests.length,
-        completed: completedResults.length,
-        avgScore: completedResults.length
-          ? (completedResults.reduce((s, r) => s + (r.totalMarks > 0 ? (r.score / r.totalMarks) * 100 : 0), 0) / completedResults.length).toFixed(1)
-          : 0,
+        pending:   pendingTests.length,
+        completed: allResults.length,
+        avgScore,
+        scoreTrend,
+        accuracy,
+        rank:      bestResult?.rank || null,
+        percentile: bestResult?.percentile || null,
+        totalCorrect,
+        totalAttempted,
       },
     });
   } catch (error) {
@@ -67,10 +136,6 @@ exports.getDashboard = async (req, res) => {
     res.redirect('/auth/login');
   }
 };
-
-/**
- * GET /student/tests
- */
 exports.getTests = async (req, res) => {
   try {
     const studentId = req.session.user.id;

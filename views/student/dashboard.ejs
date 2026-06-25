@@ -1,48 +1,190 @@
 <%- include('../partials/head') %>
 <div class="flex h-screen overflow-hidden">
   <%- include('../partials/sidebar-student') %>
-  <main class="lg:ml-64 flex-1 overflow-y-auto">
+  <main class="lg:ml-64 flex-1 overflow-y-auto bg-slate-50">
+
+    <!-- Header -->
     <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-5 lg:px-8 py-4 flex items-center gap-4">
       <button onclick="openSidebar()" class="lg:hidden text-slate-500 hover:text-slate-800">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="flex-1 min-w-0">
         <h1 class="text-lg font-bold text-slate-900 leading-tight">Dashboard</h1>
-        <p class="text-xs text-slate-400">Welcome, <span class="font-semibold text-slate-600"><%= currentUser.name %></span> &middot; Roll: <span class="font-mono"><%= currentUser.rollNo %></span></p>
+        <p class="text-xs text-slate-400">Welcome back, <span class="font-semibold text-slate-600"><%= currentUser.name %></span> &middot; Roll: <span class="font-mono"><%= currentUser.rollNo %></span></p>
       </div>
-      <% if (notifications && notifications.length > 0) { %>
-      <a href="/student/notifications" class="relative">
-        <div class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center">
+      <div class="flex items-center gap-3">
+        <!-- Notification bell -->
+        <a href="/student/notifications" class="relative w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors">
           <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <% if (notifications && notifications.length > 0) { %>
+          <span class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold"><%= notifications.length %></span>
+          <% } %>
+        </a>
+        <!-- Avatar -->
+        <div class="w-9 h-9 rounded-full bg-navy-600 flex items-center justify-center font-bold text-white text-sm shrink-0">
+          <%= currentUser.name.charAt(0).toUpperCase() %>
         </div>
-        <span class="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold"><%= notifications.length %></span>
-      </a>
-      <% } %>
+      </div>
     </header>
 
-    <div class="p-5 lg:p-8">
+    <div class="p-5 lg:p-8 space-y-6">
       <%- include('../partials/flash') %>
 
-      <!-- Stats -->
-      <div class="grid grid-cols-3 gap-4 mb-8">
-        <% [
-          {label:'Pending Tests', value: stats.pending,    icon:'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', c:'amber'},
-          {label:'Completed',    value: stats.completed,  icon:'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', c:'emerald'},
-          {label:'Avg Score',    value: stats.avgScore+'%',icon:'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', c:'navy'},
-        ].forEach(s => { %>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-4 lg:p-6">
-          <div class="w-9 h-9 rounded-xl bg-<%= s.c === 'navy' ? 'navy-50 text-navy-600' : s.c+'-50 text-'+s.c+'-600' %> flex items-center justify-center mb-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="<%= s.icon %>"/></svg>
-          </div>
-          <p class="text-2xl lg:text-3xl font-bold text-slate-900"><%= s.value %></p>
-          <p class="text-xs text-slate-500 mt-1 font-medium"><%= s.label %></p>
+      <!-- ── Upcoming Test Banner ─────────────────────────────────────── -->
+      <% if (upcomingTest) { %>
+      <div class="bg-gradient-to-r from-navy-950 to-navy-700 rounded-2xl p-5 flex items-center gap-4 text-white shadow-lg">
+        <div class="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         </div>
-        <% }) %>
+        <div class="flex-1 min-w-0">
+          <p class="text-xs text-white/60 font-medium uppercase tracking-wider mb-0.5">Upcoming Test</p>
+          <p class="font-bold text-base truncate"><%= upcomingTest.title %></p>
+          <p class="text-xs text-white/70 mt-0.5"><%= upcomingTest.duration %> mins &middot; <%= upcomingTest.totalMarks %> marks
+            <% if (upcomingTest.startTime) { %>
+            &middot; Starts <span id="countdown" class="font-semibold text-amber-300"></span>
+            <% } %>
+          </p>
+        </div>
+        <a href="/exam/<%= upcomingTest.id %>/instructions" class="shrink-0 bg-white text-navy-950 font-bold text-sm px-4 py-2.5 rounded-xl hover:bg-slate-100 transition-colors">
+          Start →
+        </a>
+      </div>
+      <% if (upcomingTest.startTime) { %>
+      <script>
+        (function() {
+          const target = new Date('<%= upcomingTest.startTime %>').getTime();
+          const el = document.getElementById('countdown');
+          function tick() {
+            const diff = target - Date.now();
+            if (!el) return;
+            if (diff <= 0) { el.textContent = 'Now!'; return; }
+            const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+            el.textContent = h > 0 ? `in ${h}h ${m}m` : m > 0 ? `in ${m}m ${s}s` : `in ${s}s`;
+            setTimeout(tick, 1000);
+          }
+          tick();
+        })();
+      </script>
+      <% } %>
+      <% } %>
+
+      <!-- ── Stats Row ──────────────────────────────────────────────────── -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Pending -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 lg:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
+              <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <% if (stats.pending > 0) { %><span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Action needed</span><% } %>
+          </div>
+          <p class="text-3xl font-bold text-slate-900"><%= stats.pending %></p>
+          <p class="text-xs text-slate-500 mt-1 font-medium">Pending Tests</p>
+        </div>
+
+        <!-- Completed -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 lg:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center">
+              <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+          </div>
+          <p class="text-3xl font-bold text-slate-900"><%= stats.completed %></p>
+          <p class="text-xs text-slate-500 mt-1 font-medium">Tests Completed</p>
+        </div>
+
+        <!-- Avg Score -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 lg:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-9 h-9 rounded-xl bg-navy-50 flex items-center justify-center">
+              <svg class="w-5 h-5 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <% if (stats.scoreTrend === 'up') { %>
+              <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">↑ Improving</span>
+            <% } else if (stats.scoreTrend === 'down') { %>
+              <span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">↓ Dropped</span>
+            <% } %>
+          </div>
+          <p class="text-3xl font-bold text-slate-900"><%= stats.avgScore %><span class="text-base text-slate-400 font-medium">%</span></p>
+          <p class="text-xs text-slate-500 mt-1 font-medium">Avg Score</p>
+        </div>
+
+        <!-- Accuracy -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 lg:p-5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center">
+              <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7a18.056 18.056 0 01-2.7-2.7"/></svg>
+            </div>
+            <% if (stats.totalAttempted > 0) { %>
+            <span class="text-[10px] font-semibold text-slate-400"><%= stats.totalCorrect %>/<%= stats.totalAttempted %></span>
+            <% } %>
+          </div>
+          <p class="text-3xl font-bold text-slate-900"><%= stats.accuracy %><span class="text-base text-slate-400 font-medium">%</span></p>
+          <p class="text-xs text-slate-500 mt-1 font-medium">Accuracy</p>
+        </div>
       </div>
 
+      <!-- ── Performance Chart + Subject Breakdown ──────────────────────── -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Chart (2/3 width) -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-semibold text-slate-900 text-sm">Score Trend</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Last <%= chartData ? JSON.parse(chartData).length : 0 %> tests</p>
+            </div>
+            <% if (stats.completed === 0) { %>
+            <span class="text-xs text-slate-400">No data yet</span>
+            <% } %>
+          </div>
+          <% if (stats.completed > 0) { %>
+          <div class="relative h-44">
+            <canvas id="scoreChart"></canvas>
+          </div>
+          <% } else { %>
+          <div class="h-44 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <p class="text-sm text-slate-400">Complete your first test to see your score trend.</p>
+          </div>
+          <% } %>
+        </div>
+
+        <!-- Subject Breakdown (1/3 width) -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">
+          <h3 class="font-semibold text-slate-900 text-sm mb-4">Subject Performance</h3>
+          <% if (subjectStats.length === 0) { %>
+          <div class="h-44 flex flex-col items-center justify-center text-center">
+            <svg class="w-10 h-10 text-slate-200 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <p class="text-xs text-slate-400">No data yet.</p>
+          </div>
+          <% } else { %>
+          <div class="space-y-3">
+            <% subjectStats.forEach(s => {
+              const clr = s.pct >= 70 ? 'emerald' : s.pct >= 45 ? 'amber' : 'rose';
+            %>
+            <div>
+              <div class="flex items-center justify-between text-xs mb-1">
+                <span class="font-medium text-slate-700 truncate max-w-[110px]"><%= s.name %></span>
+                <span class="font-bold text-<%= clr %>-600 shrink-0"><%= s.pct %>%</span>
+              </div>
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-2 rounded-full bg-<%= clr %>-500 transition-all duration-700" style="width:<%= s.pct %>%"></div>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-0.5"><%= s.count %> test<%= s.count !== 1 ? 's' : '' %> &middot; <%= s.marks %>/<%= s.maxMarks %> marks</p>
+            </div>
+            <% }) %>
+          </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- ── Pending Tests + Recent Results ────────────────────────────── -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
         <!-- Pending Tests -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-50">
             <h3 class="font-semibold text-slate-900 text-sm">Pending Tests</h3>
             <a href="/student/tests" class="text-xs text-navy-600 hover:text-navy-800 font-medium flex items-center gap-1">
@@ -50,35 +192,61 @@
             </a>
           </div>
           <% if (pendingTests.length === 0) { %>
-          <div class="py-12 text-center">
+          <div class="py-14 text-center">
             <svg class="w-10 h-10 text-emerald-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <p class="text-sm text-slate-400 font-medium">All caught up!</p>
-            <p class="text-xs text-slate-400">No pending tests right now.</p>
+            <p class="text-sm text-slate-500 font-medium">All caught up!</p>
+            <p class="text-xs text-slate-400 mt-1">No pending tests right now.</p>
           </div>
           <% } else { %>
           <ul class="divide-y divide-slate-50">
-            <% pendingTests.slice(0,5).forEach(test => { %>
+            <% pendingTests.slice(0, 5).forEach(test => {
+              const now = new Date();
+              const hasWindow = test.startTime && test.endTime;
+              const started   = !test.startTime || new Date(test.startTime) <= now;
+              const expired   = test.endTime && new Date(test.endTime) < now;
+            %>
             <li class="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
               <div class="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center shrink-0">
                 <svg class="w-5 h-5 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-medium text-slate-900 text-sm truncate"><%= test.title %></p>
-                <p class="text-xs text-slate-400 mt-0.5"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <p class="text-xs text-slate-400"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+                  <% if (test.subject) { %><span class="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium"><%= test.subject %></span><% } %>
+                </div>
+                <% if (test.startTime && !started) { %>
+                <p class="text-[10px] text-amber-600 font-semibold mt-0.5">
+                  Opens: <%= new Date(test.startTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) %>
+                </p>
+                <% } else if (test.endTime) { %>
+                <p class="text-[10px] text-rose-500 font-semibold mt-0.5">
+                  Due: <%= new Date(test.endTime).toLocaleDateString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) %>
+                </p>
+                <% } %>
               </div>
-              <a href="/exam/<%= test.id %>/instructions"
-                class="shrink-0 bg-navy-950 text-white text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-navy-900 transition-colors flex items-center gap-1.5">
-                Start
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+              <% if (!expired && started) { %>
+              <a href="/exam/<%= test.id %>/instructions" class="shrink-0 bg-navy-950 text-white text-xs font-semibold px-3.5 py-2 rounded-lg hover:bg-navy-800 transition-colors flex items-center gap-1.5">
+                Start <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
               </a>
+              <% } else if (expired) { %>
+              <span class="shrink-0 text-xs text-rose-400 font-semibold bg-rose-50 px-3 py-2 rounded-lg">Expired</span>
+              <% } else { %>
+              <span class="shrink-0 text-xs text-slate-400 font-semibold bg-slate-100 px-3 py-2 rounded-lg">Soon</span>
+              <% } %>
             </li>
             <% }) %>
           </ul>
+          <% if (pendingTests.length > 5) { %>
+          <div class="px-6 py-3 border-t border-slate-50 text-center">
+            <a href="/student/tests" class="text-xs text-navy-600 hover:underline font-medium">+ <%= pendingTests.length - 5 %> more tests →</a>
+          </div>
+          <% } %>
           <% } %>
         </div>
 
         <!-- Recent Results -->
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <div class="flex items-center justify-between px-6 py-4 border-b border-slate-50">
             <h3 class="font-semibold text-slate-900 text-sm">Recent Results</h3>
             <a href="/student/results" class="text-xs text-navy-600 hover:text-navy-800 font-medium flex items-center gap-1">
@@ -86,59 +254,157 @@
             </a>
           </div>
           <% if (completedResults.length === 0) { %>
-          <div class="py-12 text-center">
+          <div class="py-14 text-center">
             <svg class="w-10 h-10 text-slate-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             <p class="text-sm text-slate-400">No completed tests yet.</p>
           </div>
           <% } else { %>
           <ul class="divide-y divide-slate-50">
             <% completedResults.forEach(r => {
-              const pct = r.totalMarks > 0 ? ((r.score/r.totalMarks)*100).toFixed(1) : 0;
-              const clr = pct>=60?'emerald':pct>=40?'amber':'rose';
+              const pct = r.totalMarks > 0 ? ((r.score / r.totalMarks) * 100).toFixed(1) : 0;
+              const clr = pct >= 60 ? 'emerald' : pct >= 40 ? 'amber' : 'rose';
+              const grade = pct >= 80 ? 'A+' : pct >= 60 ? 'A' : pct >= 40 ? 'B' : 'C';
             %>
             <li class="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 transition-colors">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0 bg-<%= clr %>-500">
-                <%= Math.round(pct) %>
+              <!-- Score circle -->
+              <div class="relative w-11 h-11 shrink-0">
+                <svg class="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
+                  <circle cx="22" cy="22" r="18" fill="none" stroke="#f1f5f9" stroke-width="4"/>
+                  <circle cx="22" cy="22" r="18" fill="none"
+                    stroke="<%= clr === 'emerald' ? '#10b981' : clr === 'amber' ? '#f59e0b' : '#f43f5e' %>"
+                    stroke-width="4"
+                    stroke-dasharray="<%= (pct / 100 * 113.1).toFixed(1) %> 113.1"
+                    stroke-linecap="round"/>
+                </svg>
+                <span class="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-slate-700"><%= grade %></span>
               </div>
               <div class="flex-1 min-w-0">
                 <p class="font-medium text-slate-900 text-sm truncate"><%= r.test?.title %></p>
-                <p class="text-xs text-slate-400"><%= r.score %>/<%= r.totalMarks %> marks</p>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <p class="text-xs text-slate-400"><%= r.score %>/<%= r.totalMarks %> marks &middot; <span class="font-semibold text-<%= clr %>-600"><%= pct %>%</span></p>
+                </div>
+                <% if (r.correctAnswers !== null && r.correctAnswers !== undefined) { %>
+                <p class="text-[10px] text-slate-400 mt-0.5">✓ <%= r.correctAnswers %> correct &middot; ✗ <%= r.wrongAnswers %> wrong &middot; — <%= r.skippedAnswers %> skipped</p>
+                <% } %>
               </div>
-              <a href="/results/<%= r.id %>" class="text-xs text-navy-600 hover:underline shrink-0 font-medium">View</a>
+              <a href="/results/<%= r.id %>" class="shrink-0 text-xs text-navy-600 hover:text-navy-800 font-semibold border border-navy-200 hover:border-navy-400 px-3 py-1.5 rounded-lg transition-colors">View</a>
             </li>
             <% }) %>
           </ul>
+          <% if (allResultsCount > 5) { %>
+          <div class="px-6 py-3 border-t border-slate-50 text-center">
+            <a href="/student/results" class="text-xs text-navy-600 hover:underline font-medium">+ <%= allResultsCount - 5 %> more results →</a>
+          </div>
+          <% } %>
           <% } %>
         </div>
       </div>
 
-      <!-- Notifications -->
+      <!-- ── Notifications ──────────────────────────────────────────────── -->
       <% if (notifications && notifications.length > 0) { %>
-      <div class="mt-6 bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-50">
-          <h3 class="font-semibold text-slate-900 text-sm">Notifications</h3>
-          <a href="/student/notifications" class="text-xs text-navy-600 hover:text-navy-800 font-medium">Mark all read</a>
+          <h3 class="font-semibold text-slate-900 text-sm flex items-center gap-2">
+            Notifications
+            <span class="w-5 h-5 bg-rose-500 rounded-full text-white text-[10px] flex items-center justify-center font-bold"><%= notifications.length %></span>
+          </h3>
+          <a href="/student/notifications" class="text-xs text-navy-600 hover:text-navy-800 font-medium">Mark all read →</a>
         </div>
         <ul class="divide-y divide-slate-50">
           <% notifications.forEach(n => {
-            const nclr = n.type==='exam'?'navy':n.type==='success'?'emerald':n.type==='warning'?'amber':'slate';
-            const nicon = n.type==='exam'?'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2':n.type==='success'?'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z':'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+            const nclr  = n.type==='exam' ? 'navy' : n.type==='success' ? 'emerald' : n.type==='warning' ? 'amber' : 'slate';
+            const nicon = n.type==='exam'
+              ? 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2'
+              : n.type==='success'
+              ? 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'
+              : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
           %>
-          <li class="flex items-start gap-3.5 px-6 py-4">
-            <div class="w-8 h-8 rounded-full bg-<%= nclr %>-100 flex items-center justify-center shrink-0 mt-0.5">
-              <svg class="w-4 h-4 text-<%= nclr %>-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="<%= nicon %>"/></svg>
+          <li class="flex items-start gap-3.5 px-6 py-4 hover:bg-slate-50 transition-colors">
+            <div class="w-8 h-8 rounded-full bg-<%= nclr === 'navy' ? 'navy-100' : nclr+'-100' %> flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-4 h-4 text-<%= nclr === 'navy' ? 'navy-600' : nclr+'-600' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="<%= nicon %>"/>
+              </svg>
             </div>
-            <div>
+            <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-slate-900"><%= n.title %></p>
               <p class="text-xs text-slate-500 mt-0.5"><%= n.message %></p>
+              <p class="text-[10px] text-slate-300 mt-1"><%= n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '' %></p>
             </div>
+            <% if (n.link) { %><a href="<%= n.link %>" class="shrink-0 text-xs text-navy-600 hover:underline font-medium mt-0.5">Open</a><% } %>
           </li>
           <% }) %>
         </ul>
       </div>
       <% } %>
-    </div>
+
+    </div><!-- /p-8 -->
   </main>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+<% if (stats.completed > 0) { %>
+(function() {
+  const raw = <%- chartData %>;
+  if (!raw || !raw.length) return;
+  const ctx = document.getElementById('scoreChart');
+  if (!ctx) return;
+
+  const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 160);
+  gradient.addColorStop(0, 'rgba(99,102,241,0.25)');
+  gradient.addColorStop(1, 'rgba(99,102,241,0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: raw.map(d => d.label),
+      datasets: [{
+        label: 'Score %',
+        data: raw.map(d => d.pct),
+        borderColor: '#6171f1',
+        borderWidth: 2.5,
+        backgroundColor: gradient,
+        pointBackgroundColor: raw.map(d => d.pct >= 60 ? '#10b981' : d.pct >= 40 ? '#f59e0b' : '#f43f5e'),
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        tension: 0.35,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => raw[items[0].dataIndex].label,
+            label: (item) => {
+              const d = raw[item.dataIndex];
+              return [`Score: ${d.score}/${d.total}`, `Percentage: ${d.pct}%`, `Date: ${d.date}`];
+            }
+          },
+          backgroundColor: '#1e293b',
+          padding: 10,
+          cornerRadius: 8,
+        }
+      },
+      scales: {
+        y: {
+          min: 0, max: 100,
+          ticks: { callback: v => v + '%', font: { size: 10 }, color: '#94a3b8' },
+          grid: { color: '#f1f5f9' },
+        },
+        x: {
+          ticks: { font: { size: 9 }, color: '#94a3b8', maxRotation: 30 },
+          grid: { display: false },
+        }
+      }
+    }
+  });
+})();
+<% } %>
+</script>
 </body>
 </html>
