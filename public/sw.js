@@ -1,29 +1,20 @@
 // public/sw.js — CET Exam Portal Service Worker
-// Handles caching, offline support, background sync
+// Strategy: Network-first for ALL HTML pages (fresh data on every load)
+//           Cache-first only for true static assets (icons, CDN, fonts)
 
-const CACHE_VERSION = 'v1.2';
+const CACHE_VERSION = 'v2.0';
 const STATIC_CACHE  = `cet-static-${CACHE_VERSION}`;
-const DYNAMIC_CACHE = `cet-dynamic-${CACHE_VERSION}`;
 const OFFLINE_URL   = '/offline.html';
 
-// ── Assets to cache on install (app shell) ───────────────────────────────────
+// ── Static shell assets — cached on install ───────────────────────────────────
 const STATIC_ASSETS = [
-  '/',
   '/offline.html',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
-  // Tailwind CDN — cached on first load
 ];
 
-// ── URLs that are ALWAYS network-first (never serve stale) ───────────────────
-const NETWORK_ONLY = [
-  '/exam/',          // active exam — must be real-time
-  '/auth/login',
-  '/auth/logout',
-];
-
-// ── URLs that work offline (cache-first) ─────────────────────────────────────
+// ── Patterns that are ALWAYS cache-first (true static, never changes) ─────────
 const CACHE_FIRST_PATTERNS = [
   /\/icons\//,
   /\/manifest\.json/,
@@ -33,66 +24,60 @@ const CACHE_FIRST_PATTERNS = [
   /cdn\.jsdelivr\.net/,
 ];
 
-// ── Background sync queue for answer saving during offline ───────────────────
-const SYNC_QUEUE = 'answer-sync-queue';
-
 // ─────────────────────────────────────────────────────────────────────────────
-// INSTALL — cache static shell
+// INSTALL — pre-cache static shell only
 // ─────────────────────────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
   console.log('[SW] Installing', CACHE_VERSION);
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => cache.addAll(STATIC_ASSETS))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting())   // activate immediately
   );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACTIVATE — clean old caches
+// ACTIVATE — delete ALL old caches so stale pages are gone
 // ─────────────────────────────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
   console.log('[SW] Activating', CACHE_VERSION);
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(k => k !== STATIC_CACHE && k !== DYNAMIC_CACHE)
-          .map(k => caches.delete(k))
-      )
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== STATIC_CACHE).map(k => {
+          console.log('[SW] Deleting old cache:', k);
+          return caches.delete(k);
+        })
+      ))
+      .then(() => self.clients.claim())  // take control of all open tabs
   );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FETCH — smart caching strategy
+// FETCH — Network-first for pages, cache-first for real static assets
 // ─────────────────────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event;
-  const url = new URL(request.url);
 
-  // Skip non-GET and cross-origin (except whitelisted CDNs)
+  // Ignore non-GET requests entirely (POST, PUT etc. go straight to network)
   if (request.method !== 'GET') return;
 
-  // Skip network-only routes — always go to network
-  if (NETWORK_ONLY.some(p => url.pathname.startsWith(p))) {
-    event.respondWith(networkOnly(request));
-    return;
-  }
-
-  // Cache-first for static assets (icons, CDN fonts, manifest)
+  // Cache-first ONLY for true static assets (icons, CDN libraries, fonts)
   if (CACHE_FIRST_PATTERNS.some(p => p.test(request.url))) {
     event.respondWith(cacheFirst(request));
     return;
   }
 
-  // Stale-while-revalidate for pages (dashboards, tests list, results)
-  event.respondWith(staleWhileRevalidate(request));
+  // Everything else (HTML pages, API calls, uploads) → network-first
+  // Falls back to cache ONLY when offline, shows offline page if no cache
+  event.respondWith(networkFirst(request));
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND SYNC — queue answer saves when offline
+// BACKGROUND SYNC — offline answer saving during exam
 // ─────────────────────────────────────────────────────────────────────────────
+const SYNC_QUEUE = 'answer-sync-queue';
+
 self.addEventListener('sync', event => {
   if (event.tag === SYNC_QUEUE) {
     event.waitUntil(flushAnswerQueue());
@@ -104,7 +89,6 @@ async function flushAnswerQueue() {
   const tx = db.transaction('queue', 'readwrite');
   const store = tx.objectStore('queue');
   const items = await storeGetAll(store);
-
   for (const item of items) {
     try {
       const res = await fetch(item.url, {
@@ -112,10 +96,7 @@ async function flushAnswerQueue() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item.body),
       });
-      if (res.ok) {
-        await storeDelete(store, item.id);
-        console.log('[SW] Synced answer for Q', item.body.questionId);
-      }
+      if (res.ok) await storeDelete(store, item.id);
     } catch (e) {
       console.warn('[SW] Sync retry failed:', e.message);
     }
@@ -126,8 +107,8 @@ async function flushAnswerQueue() {
 // PUSH NOTIFICATIONS
 // ─────────────────────────────────────────────────────────────────────────────
 self.addEventListener('push', event => {
-  const data = event.data?.json() || {};
-  const title   = data.title   || 'CET Exam Portal';
+  const data    = event.data?.json() || {};
+  const title   = data.title || 'CET Exam Portal';
   const options = {
     body:    data.body    || 'You have a new notification.',
     icon:    '/icons/icon-192x192.png',
@@ -154,6 +135,24 @@ self.addEventListener('notificationclick', event => {
 // ─────────────────────────────────────────────────────────────────────────────
 // STRATEGY HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Network-first: always try network, fall back to cache if offline
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    // Only cache successful responses to static-ish pages (optional safety net)
+    // We intentionally do NOT cache HTML pages so they're always fresh
+    return response;
+  } catch {
+    // Offline — try cache
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    // Nothing in cache — show offline page
+    return caches.match(OFFLINE_URL);
+  }
+}
+
+// Cache-first: serve from cache, fetch and update in background
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
@@ -167,33 +166,6 @@ async function cacheFirst(request) {
   } catch {
     return caches.match(OFFLINE_URL);
   }
-}
-
-async function networkOnly(request) {
-  try {
-    return await fetch(request);
-  } catch {
-    return new Response(
-      JSON.stringify({ error: 'offline', message: 'No internet connection' }),
-      { status: 503, headers: { 'Content-Type': 'application/json' } }
-    );
-  }
-}
-
-async function staleWhileRevalidate(request) {
-  const cache  = await caches.open(DYNAMIC_CACHE);
-  const cached = await cache.match(request);
-
-  const fetchPromise = fetch(request)
-    .then(response => {
-      if (response.ok && request.method === 'GET') {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => null);
-
-  return cached || fetchPromise || caches.match(OFFLINE_URL);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
