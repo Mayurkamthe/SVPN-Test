@@ -9,7 +9,7 @@
       </div>
       <div class="divide-y divide-gray-100">
         <% results.forEach((r, i) => { const pct = ((r.score/r.totalMarks)*100).toFixed(1) %>
-        <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors <%= r.student && currentUser && r.studentId===currentUser.id?'bg-indigo-50':'' %>">
+        <div class="flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition-colors <%= r.student && currentUser && r.studentId?.toString()===currentUser.id?'bg-indigo-50':'' %>">
           <div class="w-10 text-center flex-shrink-0">
             <% if(i===0){%><span class="text-2xl">🥇</span><%}else if(i===1){%><span class="text-2xl">🥈</span><%}else if(i===2){%><span class="text-2xl">🥉</span><%}else{%><span class="text-sm font-bold text-gray-400">#<%= i+1 %></span><%}%>
           </div>

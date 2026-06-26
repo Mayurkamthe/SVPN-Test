@@ -27,4 +27,11 @@ const resultSchema = new mongoose.Schema({
 resultSchema.index({ studentId: 1, testId: 1 });
 resultSchema.index({ testId: 1, status: 1 });
 
+// Virtuals so views can use r.student and r.test (same as Sequelize aliases)
+resultSchema.virtual('student').get(function () { return this.studentId; });
+resultSchema.virtual('test').get(function ()    { return this.testId; });
+
+resultSchema.set('toObject', { virtuals: true });
+resultSchema.set('toJSON',   { virtuals: true });
+
 module.exports = mongoose.models.Result || mongoose.model('Result', resultSchema);

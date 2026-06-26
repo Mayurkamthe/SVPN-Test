@@ -8,7 +8,7 @@ const methodOverride = require('method-override');
 const path           = require('path');
 const compression    = require('compression');
 const helmet         = require('helmet');
-const MongoStore     = require('connect-mongo');
+const { MongoStore } = require('connect-mongo');
 
 const { connect } = require('./config/database');
 require('./models'); // register all schemas
