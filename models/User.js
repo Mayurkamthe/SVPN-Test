@@ -1,93 +1,29 @@
-// models/User.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const User = sequelize.define('User', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    validate: { notEmpty: true },
-  },
-  email: {
-    type: DataTypes.STRING(150),
-    allowNull: true,
-    unique: true,
-    validate: { isEmail: true },
-  },
-  rollNo: {
-    type: DataTypes.STRING(20),
-    allowNull: true,
-    unique: true,
-  },
-  password: {
-    type: DataTypes.STRING(255),
-    allowNull: false,
-  },
-  role: {
-    type: DataTypes.ENUM('admin', 'student'),
-    allowNull: false,
-    defaultValue: 'student',
-  },
-  isFirstLogin: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  phone: {
-    type: DataTypes.STRING(15),
-    allowNull: true,
-  },
-  subject: {
-    // For teachers: their subject specialization
-    type: DataTypes.STRING(100),
-    allowNull: true,
-  },
-  parentContact: {
-    type: DataTypes.STRING(20),
-    allowNull: true,
-  },
-  profilePhoto: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  lastLogin: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-}, {
-  tableName: 'users',
-  hooks: {
-    // Hash password before create/update
-    beforeCreate: async (user) => {
-      if (user.password) {
-        user.password = await bcrypt.hash(user.password, 12);
-      }
-    },
-    beforeUpdate: async (user) => {
-      if (user.changed('password')) {
-        user.password = await bcrypt.hash(user.password, 12);
-      }
-    },
-  },
+const userSchema = new mongoose.Schema({
+  name:          { type: String, required: true, trim: true },
+  email:         { type: String, unique: true, sparse: true, lowercase: true, trim: true },
+  rollNo:        { type: String, unique: true, sparse: true, trim: true },
+  password:      { type: String, required: true },
+  role:          { type: String, enum: ['admin', 'student'], default: 'student' },
+  isFirstLogin:  { type: Boolean, default: true },
+  isActive:      { type: Boolean, default: true },
+  phone:         { type: String, default: null },
+  subject:       { type: String, default: null },
+  parentContact: { type: String, default: null },
+  profilePhoto:  { type: String, default: null },
+  lastLogin:     { type: Date,   default: null },
+}, { timestamps: true });
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
 });
 
-// Instance method: verify password
-User.prototype.verifyPassword = async function (plainPassword) {
-  return bcrypt.compare(plainPassword, this.password);
+userSchema.methods.verifyPassword = function (plain) {
+  return bcrypt.compare(plain, this.password);
 };
 
-// Instance method: get display name
-User.prototype.getDisplayName = function () {
-  return this.name;
-};
-
-module.exports = User;
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

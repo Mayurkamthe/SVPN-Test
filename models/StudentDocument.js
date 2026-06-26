@@ -1,15 +1,13 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const StudentDocument = sequelize.define('StudentDocument', {
-  id:          { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  studentId:   { type: DataTypes.INTEGER, allowNull: false, references: { model: 'users', key: 'id' } },
-  fileName:    { type: DataTypes.STRING(255), allowNull: false },
-  originalName:{ type: DataTypes.STRING(255), allowNull: false },
-  fileType:    { type: DataTypes.STRING(100), allowNull: true },
-  fileSize:    { type: DataTypes.INTEGER, allowNull: true },
-  filePath:    { type: DataTypes.STRING(500), allowNull: false },
-  description: { type: DataTypes.STRING(255), allowNull: true },
-}, { tableName: 'student_documents' });
+const studentDocumentSchema = new mongoose.Schema({
+  studentId:    { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  fileName:     { type: String, required: true },
+  originalName: { type: String, required: true },
+  fileType:     { type: String, default: null },
+  fileSize:     { type: Number, default: null },
+  filePath:     { type: String, required: true },
+  description:  { type: String, default: '' },
+}, { timestamps: true });
 
-module.exports = StudentDocument;
+module.exports = mongoose.models.StudentDocument || mongoose.model('StudentDocument', studentDocumentSchema);

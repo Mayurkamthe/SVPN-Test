@@ -1,31 +1,11 @@
-// models/GroupMember.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const GroupMember = sequelize.define('GroupMember', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  groupId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'groups', key: 'id' },
-  },
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'users', key: 'id' },
-  },
-  role: {
-    type: DataTypes.ENUM('student', 'admin'),
-    defaultValue: 'student',
-  },
-}, {
-  tableName: 'group_members',
-});
+const groupMemberSchema = new mongoose.Schema({
+  groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+  userId:  { type: mongoose.Schema.Types.ObjectId, ref: 'User',  required: true },
+  role:    { type: String, enum: ['student','admin'], default: 'student' },
+}, { timestamps: true });
 
-module.exports = GroupMember;
+groupMemberSchema.index({ groupId: 1, userId: 1 }, { unique: true });
 
-// models/TestGroup.js — Assign tests to groups
+module.exports = mongoose.models.GroupMember || mongoose.model('GroupMember', groupMemberSchema);

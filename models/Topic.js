@@ -1,13 +1,11 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Topic = sequelize.define('Topic', {
-  id:          { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  name:        { type: DataTypes.STRING(150), allowNull: false },
-  course:      { type: DataTypes.ENUM('JEE','CET','NEET'), allowNull: false },
-  subject:     { type: DataTypes.STRING(100), allowNull: false },
-  subtopics:   { type: DataTypes.JSON, allowNull: true, defaultValue: [] },
-  isActive:    { type: DataTypes.BOOLEAN, defaultValue: true },
-}, { tableName: 'topics' });
+const topicSchema = new mongoose.Schema({
+  name:      { type: String, required: true },
+  course:    { type: String, enum: ['JEE','CET','NEET'], required: true },
+  subject:   { type: String, required: true },
+  subtopics: { type: [String], default: [] },
+  isActive:  { type: Boolean, default: true },
+}, { timestamps: true });
 
-module.exports = Topic;
+module.exports = mongoose.models.Topic || mongoose.model('Topic', topicSchema);

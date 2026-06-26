@@ -1,32 +1,28 @@
-// models/Question.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Question = sequelize.define('Question', {
-  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  question: { type: DataTypes.TEXT, allowNull: false },
-  questionImage: { type: DataTypes.STRING(500), allowNull: true }, // image.io / imgbb URL
-  optionA: { type: DataTypes.TEXT, allowNull: false },
-  optionB: { type: DataTypes.TEXT, allowNull: false },
-  optionC: { type: DataTypes.TEXT, allowNull: false },
-  optionD: { type: DataTypes.TEXT, allowNull: false },
-  optionAImage: { type: DataTypes.STRING(500), allowNull: true },
-  optionBImage: { type: DataTypes.STRING(500), allowNull: true },
-  optionCImage: { type: DataTypes.STRING(500), allowNull: true },
-  optionDImage: { type: DataTypes.STRING(500), allowNull: true },
-  correctAnswer: { type: DataTypes.ENUM('A','B','C','D'), allowNull: false },
-  subject: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-  },
-  difficulty: { type: DataTypes.ENUM('Easy','Medium','Hard'), allowNull: false, defaultValue: 'Medium' },
-  marks: { type: DataTypes.FLOAT, allowNull: false, defaultValue: 1.0 },
-  explanation: { type: DataTypes.TEXT, allowNull: true },
-  explanationImage: { type: DataTypes.STRING(500), allowNull: true },
-  topic:    { type: DataTypes.STRING(100), allowNull: true },
-  subtopic: { type: DataTypes.STRING(100), allowNull: true },
-  createdBy: { type: DataTypes.INTEGER, allowNull: true, references: { model: 'users', key: 'id' } },
-  isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
-}, { tableName: 'questions' });
+const questionSchema = new mongoose.Schema({
+  question:         { type: String, required: true },
+  questionImage:    { type: String, default: null },
+  optionA:          { type: String, required: true },
+  optionB:          { type: String, required: true },
+  optionC:          { type: String, required: true },
+  optionD:          { type: String, required: true },
+  optionAImage:     { type: String, default: null },
+  optionBImage:     { type: String, default: null },
+  optionCImage:     { type: String, default: null },
+  optionDImage:     { type: String, default: null },
+  correctAnswer:    { type: String, enum: ['A','B','C','D'], required: true },
+  subject:          { type: String, required: true },
+  difficulty:       { type: String, enum: ['Easy','Medium','Hard'], default: 'Medium' },
+  marks:            { type: Number, default: 1.0 },
+  explanation:      { type: String, default: null },
+  explanationImage: { type: String, default: null },
+  topic:            { type: String, default: null },
+  subtopic:         { type: String, default: null },
+  createdBy:        { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  isActive:         { type: Boolean, default: true },
+}, { timestamps: true });
 
-module.exports = Question;
+questionSchema.index({ subject: 1, topic: 1, difficulty: 1 });
+
+module.exports = mongoose.models.Question || mongoose.model('Question', questionSchema);

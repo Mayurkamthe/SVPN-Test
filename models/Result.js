@@ -1,51 +1,30 @@
-// models/Result.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Result = sequelize.define('Result', {
-  id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-  studentId: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'users', key: 'id' } },
-  testId:    { type: DataTypes.INTEGER, allowNull: false, references: { model: 'tests', key: 'id' } },
-  score:     { type: DataTypes.FLOAT,   allowNull: false, defaultValue: 0 },
-  totalMarks:{ type: DataTypes.FLOAT,   allowNull: false, defaultValue: 0 },
-  correctAnswers: { type: DataTypes.INTEGER, defaultValue: 0 },
-  wrongAnswers:   { type: DataTypes.INTEGER, defaultValue: 0 },
-  skippedAnswers: { type: DataTypes.INTEGER, defaultValue: 0 },
-  rank:       { type: DataTypes.INTEGER, allowNull: true },
-  percentile: { type: DataTypes.FLOAT,   allowNull: true },
-  timeTaken:  { type: DataTypes.INTEGER, allowNull: true }, // total seconds
+const resultSchema = new mongoose.Schema({
+  studentId:       { type: mongoose.Schema.Types.ObjectId, ref: 'User',  required: true },
+  testId:          { type: mongoose.Schema.Types.ObjectId, ref: 'Test',  required: true },
+  score:           { type: Number, default: 0 },
+  totalMarks:      { type: Number, default: 0 },
+  correctAnswers:  { type: Number, default: 0 },
+  wrongAnswers:    { type: Number, default: 0 },
+  skippedAnswers:  { type: Number, default: 0 },
+  rank:            { type: Number, default: null },
+  percentile:      { type: Number, default: null },
+  timeTaken:       { type: Number, default: null },  // seconds
+  answers:         { type: mongoose.Schema.Types.Mixed, default: {} },
+  questionTimings: { type: mongoose.Schema.Types.Mixed, default: {} },
+  subjectScores:   { type: mongoose.Schema.Types.Mixed, default: {} },
+  topicScores:     { type: mongoose.Schema.Types.Mixed, default: {} },
+  cheatingFlags:   { type: mongoose.Schema.Types.Mixed, default: { tabSwitches: 0, fullscreenExits: 0, focusLosses: 0 } },
+  violationCount:  { type: Number, default: 0 },
+  status:          { type: String, enum: ['in_progress','submitted','auto_submitted','terminated'], default: 'in_progress' },
+  questionOrder:   { type: [mongoose.Schema.Types.Mixed], default: [] },
+  markedForReview: { type: [mongoose.Schema.Types.Mixed], default: [] },
+  startedAt:       { type: Date, default: null },
+  submittedAt:     { type: Date, default: null },
+}, { timestamps: true });
 
-  // Enhanced analytics fields
-  answers: {
-    // { questionId: { answer, timeSpent(sec), visitCount } }
-    type: DataTypes.JSON, allowNull: true,
-  },
-  questionTimings: {
-    // { questionId: secondsSpent }
-    type: DataTypes.JSON, allowNull: true,
-  },
-  subjectScores: {
-    // { Physics: { correct, wrong, skipped, marks }, ... }
-    type: DataTypes.JSON, allowNull: true,
-  },
-  topicScores: {
-    // { Kinematics: { correct, wrong }, ... }
-    type: DataTypes.JSON, allowNull: true,
-  },
-  cheatingFlags: {
-    // { tabSwitches: N, fullscreenExits: N, focusLosses: N }
-    type: DataTypes.JSON, allowNull: true,
-  },
-  violationCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+resultSchema.index({ studentId: 1, testId: 1 });
+resultSchema.index({ testId: 1, status: 1 });
 
-  status: {
-    type: DataTypes.ENUM('in_progress','submitted','auto_submitted','terminated'),
-    defaultValue: 'in_progress',
-  },
-  questionOrder: { type: DataTypes.JSON, allowNull: true },
-  markedForReview: { type: DataTypes.JSON, allowNull: true, defaultValue: [] },
-  startedAt:   { type: DataTypes.DATE, allowNull: true },
-  submittedAt: { type: DataTypes.DATE, allowNull: true },
-}, { tableName: 'results' });
-
-module.exports = Result;
+module.exports = mongoose.models.Result || mongoose.model('Result', resultSchema);

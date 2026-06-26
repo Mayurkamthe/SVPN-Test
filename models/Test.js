@@ -1,112 +1,39 @@
-// models/Test.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Test = sequelize.define('Test', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  title: {
-    type: DataTypes.STRING(200),
-    allowNull: false,
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  duration: {
-    // in minutes
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 180,
-  },
-  totalMarks: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-    defaultValue: 0,
-  },
-  negativeMarking: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-    defaultValue: 0.25,
-  },
-  passingMarks: {
-    type: DataTypes.FLOAT,
-    allowNull: true,
-  },
-  shuffleQuestions: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  shuffleOptions: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  status: {
-    type: DataTypes.ENUM('draft', 'published', 'active', 'closed'),
-    defaultValue: 'draft',
-  },
-  startTime: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  endTime: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  createdBy: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: { model: 'users', key: 'id' },
-  },
-  instructions: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  course:      { type: DataTypes.ENUM('JEE','CET','NEET'), allowNull: true },
-  subject:     { type: DataTypes.STRING(100), allowNull: true },
-  topic:       { type: DataTypes.STRING(150), allowNull: true },
-  subtopic:    { type: DataTypes.STRING(150), allowNull: true },
-  questionPdfPath:  { type: DataTypes.STRING(500), allowNull: true },
-  solutionPdfPath:  { type: DataTypes.STRING(500), allowNull: true },
-  marksPerQuestion: { type: DataTypes.FLOAT, allowNull: true, defaultValue: 1 },
+const testSchema = new mongoose.Schema({
+  title:           { type: String, required: true },
+  description:     { type: String, default: null },
+  duration:        { type: Number, default: 180 },   // minutes
+  totalMarks:      { type: Number, default: 0 },
+  negativeMarking: { type: Number, default: 0.25 },
+  passingMarks:    { type: Number, default: null },
+  shuffleQuestions:{ type: Boolean, default: true },
+  shuffleOptions:  { type: Boolean, default: false },
+  status:          { type: String, enum: ['draft','published','active','closed'], default: 'draft' },
+  startTime:       { type: Date, default: null },
+  endTime:         { type: Date, default: null },
+  createdBy:       { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  instructions:    { type: String, default: null },
+  course:          { type: String, enum: ['JEE','CET','NEET', null], default: null },
+  subject:         { type: String, default: null },
+  topic:           { type: String, default: null },
+  subtopic:        { type: String, default: null },
+  marksPerQuestion:{ type: Number, default: 1 },
+  questionPdfPath: { type: String, default: null },
+  solutionPdfPath: { type: String, default: null },
+  // Embedded question list (replaces TestQuestion join table)
+  questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Question' }],
+  // Groups assigned (replaces TestGroup join table)
+  groups:    [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
+  // Anti-cheat
+  autoSubmitOnViolation: { type: Boolean, default: false },
+  maxTabSwitches:        { type: Number, default: 3 },
+  maxFocusLosses:        { type: Number, default: 5 },
+  blockCopyPaste:        { type: Boolean, default: true },
+  requireFullscreen:     { type: Boolean, default: false },
+  isActive:              { type: Boolean, default: true },
+}, { timestamps: true });
 
-  // ── Anti-cheat & proctoring settings ─────────────────────────────────────
-  autoSubmitOnViolation: {
-    // Auto-submit exam when tab switches exceed limit
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  maxTabSwitches: {
-    // Number of tab switches allowed before auto-submit (0 = unlimited)
-    type: DataTypes.INTEGER,
-    defaultValue: 3,
-  },
-  maxFocusLosses: {
-    type: DataTypes.INTEGER,
-    defaultValue: 5,
-  },
-  blockCopyPaste: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-  requireFullscreen: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
+testSchema.index({ status: 1, createdBy: 1 });
 
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-  tableName: 'tests',
-});
-
-module.exports = Test;
-
-// Patch: add course/subject/topic/subtopic/PDF fields via alter (handled in sync)
-
-// Anti-cheat settings (injected via sequelize alter on sync)
+module.exports = mongoose.models.Test || mongoose.model('Test', testSchema);

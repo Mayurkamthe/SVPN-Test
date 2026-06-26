@@ -1,34 +1,11 @@
-// models/Group.js
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const mongoose = require('mongoose');
 
-const Group = sequelize.define('Group', {
-  id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  name: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true,
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  academicYear: {
-    type: DataTypes.STRING(20),
-    allowNull: true,
-    defaultValue: process.env.ACADEMIC_YEAR || '2024-2025',
-  },
-  course: { type: DataTypes.ENUM('JEE','CET','NEET'), allowNull: true },
-  isActive: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: true,
-  },
-}, {
-  tableName: 'groups',
-});
+const groupSchema = new mongoose.Schema({
+  name:         { type: String, required: true, unique: true, trim: true },
+  description:  { type: String, default: null },
+  academicYear: { type: String, default: process.env.ACADEMIC_YEAR || '2024-2025' },
+  course:       { type: String, enum: ['JEE','CET','NEET', null], default: null },
+  isActive:     { type: Boolean, default: true },
+}, { timestamps: true });
 
-module.exports = Group;
+module.exports = mongoose.models.Group || mongoose.model('Group', groupSchema);
