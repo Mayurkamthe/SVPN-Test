@@ -7,7 +7,7 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "seed": "node seeders/seed.js",
-    "migrate": "npx sequelize-cli db:migrate"
+    "seed:fresh": "node seeders/seed.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
