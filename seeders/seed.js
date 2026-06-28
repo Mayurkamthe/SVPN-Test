@@ -21,9 +21,9 @@ async function seed() {
 
     // ── Admin ────────────────────────────────────────────────────────────────
     const admin = await User.create({
-      name:         'System Administrator',
-      email:        process.env.COLLEGE_EMAIL || 'admin@xyzcollege.edu.in',
-      password:     process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@XYZ2024',
+      name:         process.env.ADMIN_NAME || 'System Administrator',
+      email:        process.env.ADMIN_EMAIL || process.env.COLLEGE_EMAIL || 'admin@xyzcollege.edu.in',
+      password:     process.env.ADMIN_PASSWORD || process.env.ADMIN_DEFAULT_PASSWORD || 'Admin@XYZ2024',
       role:         'admin',
       isFirstLogin: false,
     });
@@ -96,7 +96,7 @@ async function seed() {
 
     console.log('\n🎉 Seed complete!\n');
     console.log('──────────────────────────────────────────────');
-    console.log('  Admin:   admin@xyzcollege.edu.in / Admin@XYZ2024');
+    console.log(`  Admin:   ${process.env.ADMIN_EMAIL || 'admin@xyzcollege.edu.in'} / ${process.env.ADMIN_PASSWORD || 'Admin@XYZ2024'}`);
     console.log('  Student: Roll No: 2024CE001      / CET@0001');
     console.log('  Student: Roll No: 2024CE002      / CET@0002');
     console.log('──────────────────────────────────────────────\n');
