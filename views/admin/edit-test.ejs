@@ -8,27 +8,27 @@
       </button>
       <div class="flex items-center gap-3">
         <a href="/admin/tests" class="text-slate-400 hover:text-slate-600">←</a>
-        <h1 class="text-lg font-bold text-slate-900">Create New Test</h1>
+        <h1 class="text-lg font-bold text-slate-900">Edit Test</h1>
       </div>
     </header>
     <div class="p-5 lg:p-8 max-w-4xl mx-auto">
       <%- include('../partials/flash') %>
-      <form action="/admin/tests" method="POST" enctype="multipart/form-data" class="space-y-6">
+      <form action="/admin/tests/<%= test.id %>/edit" method="POST" enctype="multipart/form-data" class="space-y-6">
 
         <!-- Basic Info -->
         <div class="bg-white rounded-xl border border-slate-200 p-6">
           <h3 class="font-bold text-slate-900 mb-4">📝 Test Details</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="md:col-span-2"><label class="block text-sm font-semibold mb-1.5">Title *</label>
-              <input type="text" name="title" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500" placeholder="e.g. CET Mock Test 1 — Physics"/></div>
+              <input type="text" name="title" required value="<%= test.title %>" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500" placeholder="e.g. CET Mock Test 1 — Physics"/></div>
             <div class="md:col-span-2"><label class="block text-sm font-semibold mb-1.5">Description</label>
-              <textarea name="description" rows="2" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"></textarea></div>
+              <textarea name="description" rows="2" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"><%= test.description || '' %></textarea></div>
             <div class="md:col-span-2">
               <label class="block text-sm font-semibold mb-2">Course</label>
               <div class="flex flex-wrap gap-2">
                 <% COURSES.forEach(c => { %>
                 <label class="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" name="courses" value="<%= c %>" class="rounded" <%= (Array.isArray(filterCourse)?filterCourse:[filterCourse]).includes(c)?'checked':'' %>/>
+                  <input type="checkbox" name="courses" value="<%= c %>" class="rounded" <%= (test.course||[]).includes(c)?'checked':'' %>/>
                   <span class="text-sm font-medium text-slate-700"><%= c %></span>
                 </label>
                 <% }) %>
@@ -39,16 +39,16 @@
               <div class="flex flex-wrap gap-2">
                 <% SUBJECTS.forEach(s => { %>
                 <label class="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 cursor-pointer hover:bg-slate-50 transition-colors">
-                  <input type="checkbox" name="subjects" value="<%= s %>" class="rounded" <%= (Array.isArray(filterSubject)?filterSubject:[filterSubject]).includes(s)?'checked':'' %>/>
+                  <input type="checkbox" name="subjects" value="<%= s %>" class="rounded" <%= (test.subject||[]).includes(s)?'checked':'' %>/>
                   <span class="text-sm font-medium text-slate-700"><%= s %></span>
                 </label>
                 <% }) %>
               </div>
             </div>
             <div><label class="block text-sm font-semibold mb-1.5">Duration (minutes) *</label>
-              <input type="number" name="duration" value="180" min="5" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"/></div>
+              <input type="number" name="duration" value="<%= test.duration %>" min="5" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"/></div>
             <div><label class="block text-sm font-semibold mb-1.5">Negative Marking</label>
-              <input type="number" name="negativeMarking" value="0.25" step="0.25" min="0" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"/></div>
+              <input type="number" name="negativeMarking" value="<%= test.negativeMarking %>" step="0.25" min="0" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500"/></div>
             <div><label class="block text-sm font-semibold mb-1.5">Start Time</label>
               <input type="datetime-local" name="startTime" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm"/></div>
             <div><label class="block text-sm font-semibold mb-1.5">End Time</label>
@@ -136,7 +136,7 @@
             <% if (!groups.length) { %><p class="text-sm text-slate-400 col-span-3">No groups yet. Create groups first.</p><% } %>
             <% groups.forEach(g => { %>
             <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
-              <input type="checkbox" name="groupIds" value="<%= g.id %>" class="rounded"/>
+              <input type="checkbox" name="groupIds" value="<%= g.id %>" class="rounded" <%= (test.groups||[]).map(x=>x.id||x.toString()).includes(g.id)?'checked':'' %>/>
               <span class="text-sm font-medium text-slate-700"><%= g.name %></span>
             </label>
             <% }) %>
@@ -231,7 +231,7 @@
               data-subtopic="<%= q.subtopic || '' %>"
               data-diff="<%= q.difficulty %>"
               data-text="<%= q.question.toLowerCase() %>" data-idx="<%= i %>">
-              <input type="checkbox" name="questionIds" value="<%= q.id %>" onchange="updCount()" class="mt-0.5 rounded shrink-0"/>
+              <input type="checkbox" name="questionIds" value="<%= q.id %>" onchange="updCount()" class="mt-0.5 rounded shrink-0" <%= (test.questions||[]).map(x=>x.id||x.toString()).includes(q.id)?'checked':'' %>/>
               <div class="flex-1 min-w-0">
                 <p class="text-sm text-slate-800 leading-snug"><%= q.question.length>120?q.question.substring(0,120)+'...':q.question %></p>
                 <div class="flex flex-wrap gap-1.5 mt-1.5 items-center">
@@ -341,7 +341,7 @@
         </div>
 
         <div class="flex gap-4">
-          <button type="submit" class="flex-1 bg-navy-950 text-white font-bold py-4 rounded-xl hover:bg-navy-800 transition-colors text-base shadow-lg">Create Test</button>
+          <button type="submit" class="flex-1 bg-navy-950 text-white font-bold py-4 rounded-xl hover:bg-navy-800 transition-colors text-base shadow-lg">Save Changes</button>
           <a href="/admin/tests" class="px-8 py-4 border-2 border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50">Cancel</a>
         </div>
       </form>

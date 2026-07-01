@@ -44,6 +44,7 @@
                 <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden md:table-cell">Email</th>
                 <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
                 <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider hidden lg:table-cell">Joined</th>
+                <th class="px-6 py-3 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-50">
@@ -66,10 +67,22 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 text-slate-400 text-xs hidden lg:table-cell"><%= new Date(s.createdAt).toLocaleDateString('en-IN') %></td>
+                <td class="px-6 py-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <a href="/admin/students/<%= s.id %>/view" title="View Profile"
+                      class="w-7 h-7 rounded-lg bg-navy-50 flex items-center justify-center text-navy-600 hover:bg-navy-100 transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    </a>
+                    <button onclick="openDeleteStudent('<%= s.id %>', `<%= s.name.replace(/`/g, '\\`') %>`)" title="Delete Student"
+                      class="w-7 h-7 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 hover:bg-rose-100 transition-colors">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
+                </td>
               </tr>
               <% }) %>
               <% if (students.length === 0) { %>
-              <tr><td colspan="6" class="px-6 py-16 text-center text-slate-400">
+              <tr><td colspan="7" class="px-6 py-16 text-center text-slate-400">
                 <svg class="w-12 h-12 mx-auto mb-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20H3v-1a6 6 0 0114 0v1zm7 0h-3v-1a4.5 4.5 0 00-3.21-4.3M15 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 No students yet. Add your first student.
               </td></tr>
@@ -157,11 +170,31 @@
   </div>
 </div>
 
+<!-- Delete Student Modal -->
+<div id="deleteStudentModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+    <div class="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <h3 class="font-bold text-slate-900 mb-1.5">Delete Student?</h3>
+    <p class="text-sm text-slate-500 mb-5">Deactivate <strong id="deleteStudentName"></strong>? They will be removed from all batches and unable to log in.</p>
+    <form id="deleteStudentForm" action="" method="POST" class="flex gap-3">
+      <button type="submit" class="flex-1 bg-rose-600 text-white font-semibold py-3 rounded-xl hover:bg-rose-700">Yes, Delete</button>
+      <button type="button" onclick="document.getElementById('deleteStudentModal').classList.add('hidden')" class="flex-1 border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-50">Cancel</button>
+    </form>
+  </div>
+</div>
+
 <script>
 function filterTable(q) {
   document.querySelectorAll('.student-row').forEach(row => {
     row.style.display = row.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
   });
+}
+function openDeleteStudent(id, name) {
+  document.getElementById('deleteStudentForm').action = '/admin/students/' + id + '/delete';
+  document.getElementById('deleteStudentName').textContent = name;
+  document.getElementById('deleteStudentModal').classList.remove('hidden');
 }
 </script>
 </body>

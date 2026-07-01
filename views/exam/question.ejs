@@ -197,8 +197,8 @@ let navInProgress = false;
 
 // ── Per-test anti-cheat settings (from admin) ────────────────────────────
 const SETTINGS = {
-  autoSubmitOnViolation: true,
-  maxTabSwitches: 1,
+  autoSubmitOnViolation: <%- test.autoSubmitOnViolation ? 'true' : 'false' %>,
+  maxTabSwitches: <%= test.maxTabSwitches || 3 %>,
   maxFocusLosses:  <%= test.maxFocusLosses  || 5 %>,
   blockCopyPaste:  <%- test.blockCopyPaste  !== false ? 'true' : 'false' %>,
   requireFullscreen: <%- test.requireFullscreen ? 'true' : 'false' %>,
@@ -243,6 +243,15 @@ function selectOption(key, boxEl) {
   const keySpan = boxEl.querySelector('.opt-key');
   if (keySpan) { keySpan.className = keySpan.className.replace('border-slate-300 text-slate-500','').trim() + ' bg-navy-950 border-navy-950 text-white'; }
   currentAnswer = key;
+
+  // Auto-clear "Mark for Review" when student answers — answered takes priority
+  if (markedForReview) {
+    markedForReview = false;
+    const btn = document.getElementById('markReviewBtn');
+    btn.className = 'text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors border-slate-200 text-slate-600 hover:border-violet-300';
+    btn.textContent = 'Mark for Review';
+  }
+
   saveToServer(key);
 }
 

@@ -363,20 +363,22 @@ exports.createTest = async (req, res) => {
     const questionIds_raw = req.body.questionIds;
     const selectedQIds = Array.isArray(questionIds_raw) ? questionIds_raw : (questionIds_raw ? [questionIds_raw] : []);
     if (!selectedQIds.length) { req.flash('error','Select at least one question.'); return res.redirect('/admin/tests/create'); }
-    const { title, description, duration, negativeMarking, passingMarks, shuffleQuestions, shuffleOptions, startTime, endTime, instructions, groupIds, course, subject, topic, subtopic, marksPerQuestion } = req.body;
+    const { title, description, duration, negativeMarking, passingMarks, shuffleQuestions, shuffleOptions, startTime, endTime, instructions, groupIds, courses, subjects, topic, subtopic, marksPerQuestion } = req.body;
     const questionsData = await Question.find({ _id:{ $in:selectedQIds } });
     const totalMarks = questionsData.reduce((s,q)=>s+q.marks, 0);
     let questionPdfPath=null, solutionPdfPath=null;
     if (req.files?.questionPdf) { const fn=`q_${Date.now()}.pdf`; questionPdfPath='/uploads/pdfs/'+fn; fs.writeFileSync(path.join(PDF_DIR,fn),req.files.questionPdf.data); }
     if (req.files?.solutionPdf) { const fn=`s_${Date.now()}.pdf`; solutionPdfPath='/uploads/pdfs/'+fn; fs.writeFileSync(path.join(PDF_DIR,fn),req.files.solutionPdf.data); }
     const groups = Array.isArray(groupIds) ? groupIds : (groupIds ? [groupIds] : []);
+    const courseArr  = Array.isArray(courses)  ? courses  : (courses  ? [courses]  : []);
+    const subjectArr = Array.isArray(subjects) ? subjects : (subjects ? [subjects] : []);
     const test = await Test.create({
       title, description, duration:parseInt(duration)||180,
       negativeMarking:parseFloat(negativeMarking)||0.25, passingMarks:parseFloat(passingMarks)||null,
       shuffleQuestions:shuffleQuestions==='on', shuffleOptions:shuffleOptions==='on',
       startTime:startTime||null, endTime:endTime||null, instructions,
       totalMarks, createdBy:req.session.user.id, status:'draft',
-      course:course||null, subject:subject||null, topic:topic||null, subtopic:subtopic||null,
+      course: courseArr, subject: subjectArr, topic:topic||null, subtopic:subtopic||null,
       marksPerQuestion:parseFloat(marksPerQuestion)||1,
       questionPdfPath, solutionPdfPath,
       questions:selectedQIds, groups,
@@ -466,7 +468,145 @@ exports.deleteDocument = async (req, res) => {
   } catch (e) { req.flash('error','Failed.'); res.redirect('/admin/documents'); }
 };
 
-// ── PDF TEST UPLOAD ───────────────────────────────────────────────────────────
+// ── GROUP DETAIL / EDIT / DELETE ──────────────────────────────────────────
+exports.getGroupDetail = async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group) { req.flash('error','Batch not found.'); return res.redirect('/admin/groups'); }
+    const memberships = await GroupMember.find({ groupId: group._id, role: 'student' }).populate('userId');
+    const members = memberships.map(m => m.userId).filter(Boolean);
+    const allGroups = await Group.find({ isActive: true });
+    res.render('admin/group-detail', { title: group.name, group, members, allGroups });
+  } catch (e) { console.error(e); req.flash('error','Failed.'); res.redirect('/admin/groups'); }
+};
+
+exports.updateGroup = async (req, res) => {
+  try {
+    const { name, description, academicYear } = req.body;
+    await Group.findByIdAndUpdate(req.params.id, { name, description: description || null, academicYear: academicYear || process.env.ACADEMIC_YEAR });
+    req.flash('success', 'Batch updated.');
+    res.redirect('/admin/groups');
+  } catch (e) { req.flash('error', 'Failed: ' + e.message); res.redirect('/admin/groups'); }
+};
+
+exports.deleteGroup = async (req, res) => {
+  try {
+    await GroupMember.deleteMany({ groupId: req.params.id });
+    await Group.findByIdAndUpdate(req.params.id, { isActive: false });
+    req.flash('success', 'Batch deleted.');
+    res.redirect('/admin/groups');
+  } catch (e) { req.flash('error', 'Failed.'); res.redirect('/admin/groups'); }
+};
+
+exports.removeStudentFromGroup = async (req, res) => {
+  try {
+    await GroupMember.findOneAndDelete({ groupId: req.params.id, userId: req.params.studentId });
+    req.flash('success', 'Student removed from batch.');
+    res.redirect(`/admin/groups/${req.params.id}`);
+  } catch (e) { req.flash('error', 'Failed.'); res.redirect(`/admin/groups/${req.params.id}`); }
+};
+
+exports.moveStudentToGroup = async (req, res) => {
+  try {
+    const { targetGroupId } = req.body;
+    await GroupMember.findOneAndDelete({ groupId: req.params.id, userId: req.params.studentId });
+    await GroupMember.findOneAndUpdate({ groupId: targetGroupId, userId: req.params.studentId }, { role: 'student' }, { upsert: true });
+    req.flash('success', 'Student moved to new batch.');
+    res.redirect(`/admin/groups/${req.params.id}`);
+  } catch (e) { req.flash('error', 'Failed.'); res.redirect(`/admin/groups/${req.params.id}`); }
+};
+
+// ── DELETE STUDENT ─────────────────────────────────────────────────────────
+exports.deleteStudent = async (req, res) => {
+  try {
+    await GroupMember.deleteMany({ userId: req.params.id });
+    await User.findByIdAndUpdate(req.params.id, { isActive: false });
+    req.flash('success', 'Student deleted.');
+    res.redirect('/admin/students');
+  } catch (e) { req.flash('error', 'Failed.'); res.redirect('/admin/students'); }
+};
+
+// ── VIEW STUDENT PROFILE ──────────────────────────────────────────────────
+exports.viewStudentProfile = async (req, res) => {
+  try {
+    const student = await User.findById(req.params.id);
+    if (!student || student.role !== 'student') { req.flash('error','Student not found.'); return res.redirect('/admin/students'); }
+    const [memberships, documents, results] = await Promise.all([
+      GroupMember.find({ userId: student._id }).populate('groupId', 'name academicYear'),
+      StudentDocument.find({ studentId: student._id }).sort({ createdAt: -1 }),
+      require('../models/Result').find({ studentId: student._id, status: { $in: ['submitted','auto_submitted'] } }).populate('testId', 'title totalMarks').sort({ createdAt: -1 }).limit(10),
+    ]);
+    res.render('admin/student-profile', { title: student.name, student, memberships, documents, results });
+  } catch (e) { console.error(e); req.flash('error','Failed.'); res.redirect('/admin/students'); }
+};
+
+// ── EDIT TEST ─────────────────────────────────────────────────────────────
+exports.getEditTest = async (req, res) => {
+  try {
+    const [test, groups, questions] = await Promise.all([
+      Test.findById(req.params.id).populate('questions').populate('groups','name'),
+      Group.find({ isActive:true }),
+      Question.find({ isActive:true }).sort({ subject:1, difficulty:1 }),
+    ]);
+    if (!test) { req.flash('error','Not found.'); return res.redirect('/admin/tests'); }
+    res.render('admin/edit-test', { title:'Edit Test', test, groups, questions, COURSES, SUBJECTS:ALL_SUBJECTS });
+  } catch (e) { req.flash('error','Failed.'); res.redirect('/admin/tests'); }
+};
+
+exports.updateTest = async (req, res) => {
+  try {
+    const questionIds_raw = req.body.questionIds;
+    const selectedQIds = Array.isArray(questionIds_raw) ? questionIds_raw : (questionIds_raw ? [questionIds_raw] : []);
+    const { title, description, duration, negativeMarking, passingMarks, shuffleQuestions, shuffleOptions, startTime, endTime, instructions, groupIds, courses, subjects } = req.body;
+    const questionsData = selectedQIds.length ? await Question.find({ _id:{ $in:selectedQIds } }) : [];
+    const totalMarks = questionsData.reduce((s,q)=>s+q.marks, 0);
+    const groups = Array.isArray(groupIds) ? groupIds : (groupIds ? [groupIds] : []);
+    const courseArr  = Array.isArray(courses)  ? courses  : (courses  ? [courses]  : []);
+    const subjectArr = Array.isArray(subjects) ? subjects : (subjects ? [subjects] : []);
+    await Test.findByIdAndUpdate(req.params.id, {
+      title, description, duration:parseInt(duration)||180,
+      negativeMarking:parseFloat(negativeMarking)||0.25,
+      passingMarks:parseFloat(passingMarks)||null,
+      shuffleQuestions:shuffleQuestions==='on', shuffleOptions:shuffleOptions==='on',
+      startTime:startTime||null, endTime:endTime||null, instructions,
+      course: courseArr, subject: subjectArr, groups, totalMarks,
+      autoSubmitOnViolation:req.body.autoSubmitOnViolation==='on',
+      maxTabSwitches:parseInt(req.body.maxTabSwitches)||3,
+      maxFocusLosses:parseInt(req.body.maxFocusLosses)||5,
+      blockCopyPaste:req.body.blockCopyPaste==='on',
+      requireFullscreen:req.body.requireFullscreen==='on',
+      ...(selectedQIds.length ? { questions: selectedQIds } : {}),
+    });
+    req.flash('success','Test updated!');
+    res.redirect(`/admin/tests/${req.params.id}`);
+  } catch (e) { req.flash('error','Failed: '+e.message); res.redirect(`/admin/tests/${req.params.id}`); }
+};
+
+exports.deleteTest = async (req, res) => {
+  try {
+    await Test.findByIdAndUpdate(req.params.id, { isActive: false });
+    req.flash('success','Test deleted.');
+    res.redirect('/admin/tests');
+  } catch (e) { req.flash('error','Failed.'); res.redirect('/admin/tests'); }
+};
+
+// ── QUESTION TEMPLATE DOWNLOAD ────────────────────────────────────────────
+exports.downloadQuestionTemplate = (req, res) => {
+  const rows = [
+    { question:'What is the SI unit of force?', optionA:'Joule', optionB:'Newton', optionC:'Watt', optionD:'Pascal', correctAnswer:'B', subject:'Physics', topic:'Laws of Motion', subtopic:'', difficulty:'Easy', marks:1, explanation:'Force = mass × acceleration. SI unit is Newton (N).', questionImageUrl:'' },
+    { question:'pH of pure water at 25°C?', optionA:'0', optionB:'7', optionC:'14', optionD:'1', correctAnswer:'B', subject:'Chemistry', topic:'Acids and Bases', subtopic:'', difficulty:'Easy', marks:1, explanation:'Pure water is neutral with pH = 7.', questionImageUrl:'' },
+    { question:'Derivative of sin(x) is?', optionA:'-cos(x)', optionB:'cos(x)', optionC:'tan(x)', optionD:'-sin(x)', correctAnswer:'B', subject:'Mathematics', topic:'Calculus', subtopic:'', difficulty:'Easy', marks:1, explanation:'d/dx sin(x) = cos(x)', questionImageUrl:'' },
+  ];
+  const wb = xlsx.utils.book_new();
+  const ws = xlsx.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:60},{wch:20},{wch:20},{wch:20},{wch:20},{wch:15},{wch:15},{wch:20},{wch:15},{wch:12},{wch:6},{wch:60},{wch:40}];
+  xlsx.utils.book_append_sheet(wb, ws, 'Questions');
+  const buf = xlsx.write(wb, { type:'buffer', bookType:'xlsx' });
+  res.setHeader('Content-Disposition','attachment; filename=question_import_template.xlsx');
+  res.setHeader('Content-Type','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.send(buf);
+};
+
 exports.uploadPdfTest = async (req, res) => {
   try {
     if (!req.files?.questionPdf) { req.flash('error','Question PDF required.'); return res.redirect('/admin/tests/create'); }
