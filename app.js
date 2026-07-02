@@ -52,8 +52,14 @@ app.use(fileUpload({
 // ── Sessions (stored in MongoDB) ──────────────────────────────────────────────
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/svpn_test';
 
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET && process.env.NODE_ENV === 'production') {
+  console.error('❌ SESSION_SECRET env var is not set. This is a security risk in production. Exiting.');
+  process.exit(1);
+}
+
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'svpn_secret_key',
+  secret: SESSION_SECRET || 'svpn_secret_key_dev_only',
   resave: false,
   saveUninitialized: false,
   store: MongoStore.create({
