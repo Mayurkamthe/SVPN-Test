@@ -130,7 +130,8 @@
                 <div class="mb-2">
                   <img src="<%= q.questionImage %>" alt="Question image"
                     class="max-h-40 rounded-lg border border-slate-200 object-contain bg-slate-50"
-                    onerror="this.outerHTML='<span class=\'text-xs text-rose-500 bg-rose-50 px-2 py-1 rounded\'>⚠ Image failed to load: <%= q.questionImage.replace(/\'/g, \'\') %></span>'"/>
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block'"/>
+                  <span style="display:none" class="text-xs text-rose-500 bg-rose-50 px-2 py-1 rounded">⚠ Image failed to load</span>
                 </div>
                 <% } %>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600 mb-2">
