@@ -314,7 +314,9 @@ exports.bulkImportQuestions = async (req, res) => {
           optionB:row.optionB||row['Option B'], optionC:row.optionC||row['Option C'], optionD:row.optionD||row['Option D'],
           correctAnswer:(row.correctAnswer||'A').toUpperCase(), subject:row.subject||'Physics',
           difficulty:row.difficulty||'Medium', marks:parseFloat(row.marks||1),
-          topic:row.topic||null, subtopic:row.subtopic||null, explanation:row.explanation||null, createdBy:req.session.user.id,
+          topic:row.topic||null, subtopic:row.subtopic||null, explanation:row.explanation||null,
+          questionImage: row.questionImageUrl || row.questionImage || row['Image URL'] || row['Question Image URL'] || null,
+          createdBy:req.session.user.id,
         });
         created++;
       } catch {}

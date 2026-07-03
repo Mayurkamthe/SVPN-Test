@@ -126,7 +126,13 @@
               <span class="text-xs font-mono bg-slate-100 text-slate-500 px-2 py-1 rounded mt-0.5 shrink-0"><%= ((currentPage-1)*25)+i+1 %></span>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-slate-900 mb-2 leading-snug"><%= q.question %></p>
-                <% if (q.questionImage) { %><img src="<%= q.questionImage %>" class="max-h-28 rounded-lg border mb-2 object-contain"/><% } %>
+                <% if (q.questionImage) { %>
+                <div class="mb-2">
+                  <img src="<%= q.questionImage %>" alt="Question image"
+                    class="max-h-40 rounded-lg border border-slate-200 object-contain bg-slate-50"
+                    onerror="this.outerHTML='<span class=\'text-xs text-rose-500 bg-rose-50 px-2 py-1 rounded\'>⚠ Image failed to load: <%= q.questionImage.replace(/\'/g, \'\') %></span>'"/>
+                </div>
+                <% } %>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600 mb-2">
                   <span class="flex items-center gap-1"><span class="font-semibold text-slate-400">A.</span> <%= q.optionA %></span>
                   <span class="flex items-center gap-1"><span class="font-semibold text-slate-400">B.</span> <%= q.optionB %></span>
@@ -289,6 +295,9 @@
         <p class="font-mono">question, optionA, optionB, optionC, optionD, correctAnswer, subject, difficulty</p>
         <p class="font-bold mt-2 mb-0.5 text-slate-700">Optional columns:</p>
         <p class="font-mono">topic, subtopic, marks, explanation, questionImageUrl</p>
+        <p class="mt-2 text-amber-700 bg-amber-50 rounded px-2 py-1.5 border border-amber-200">
+          ⚠ <strong>questionImageUrl</strong> must be a <strong>direct public image URL</strong> ending in .jpg/.png/.gif (e.g. from ImgBB, Imgur, Cloudinary). Google Drive or social media share links will not display.
+        </p>
       </div>
       <!-- Step 3: Upload -->
       <div class="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center">
