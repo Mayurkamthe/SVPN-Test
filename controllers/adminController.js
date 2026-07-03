@@ -609,11 +609,18 @@ exports.downloadQuestionTemplate = (req, res) => {
   res.send(buf);
 };
 
+exports.getUploadTest = async (req, res) => {
+  try {
+    const groups = await Group.find({ isActive: true });
+    res.render('admin/upload-test', { title: 'Upload Test via PDF', groups, COURSES, SUBJECTS: ALL_SUBJECTS });
+  } catch (e) { req.flash('error', 'Failed.'); res.redirect('/admin/tests'); }
+};
+
 exports.uploadPdfTest = async (req, res) => {
   try {
-    if (!req.files?.questionPdf) { req.flash('error','Question PDF required.'); return res.redirect('/admin/tests/create'); }
-    const { title, description, duration, negativeMarking, startTime, endTime, instructions, groupIds, course, subject, marksPerQuestion } = req.body;
-    if (!title?.trim()) { req.flash('error','Test title required.'); return res.redirect('/admin/tests/create'); }
+    if (!req.files?.questionPdf) { req.flash('error','Question PDF required.'); return res.redirect('/admin/tests/upload'); }
+    const { title, description, duration, negativeMarking, startTime, endTime, instructions, groupIds, courses, subjects, marksPerQuestion } = req.body;
+    if (!title?.trim()) { req.flash('error','Test title required.'); return res.redirect('/admin/tests/upload'); }
     const qFname = `q_${Date.now()}.pdf`;
     const qBuf   = req.files.questionPdf.data;
     fs.writeFileSync(path.join(PDF_DIR,qFname), qBuf);
@@ -630,11 +637,13 @@ exports.uploadPdfTest = async (req, res) => {
     const mpq=parseFloat(marksPerQuestion)||1;
     const totalMarks=pdfPageCount>0?pdfPageCount*mpq:mpq;
     const groups=Array.isArray(groupIds)?groupIds:(groupIds?[groupIds]:[]);
+    const courseArr  = Array.isArray(courses)  ? courses  : (courses  ? [courses]  : []);
+    const subjectArr = Array.isArray(subjects) ? subjects : (subjects ? [subjects] : []);
     const test = await Test.create({
       title:title.trim(), description:description||null, duration:parseInt(duration)||180,
       negativeMarking:parseFloat(negativeMarking)||0.25, startTime:startTime||null, endTime:endTime||null,
       instructions:instructions||null, totalMarks, createdBy:req.session.user.id, status:'draft',
-      course:course||null, subject:subject||null, marksPerQuestion:mpq,
+      course:courseArr, subject:subjectArr, marksPerQuestion:mpq,
       questionPdfPath, solutionPdfPath, groups,
       autoSubmitOnViolation:req.body.autoSubmitOnViolation==='on',
       maxTabSwitches:parseInt(req.body.maxTabSwitches)||3,
@@ -645,7 +654,7 @@ exports.uploadPdfTest = async (req, res) => {
     const pageInfo=pdfPageCount>0?` Detected ${pdfPageCount} page(s) — ${totalMarks} total marks.`:'';
     req.flash('success',`PDF test "${test.title}" created!${pageInfo}${solutionPdfPath?' Model answers attached.':''}`);
     res.redirect(`/admin/tests/${test._id}`);
-  } catch (e) { console.error(e); req.flash('error','Failed: '+e.message); res.redirect('/admin/tests/create'); }
+  } catch (e) { console.error(e); req.flash('error','Failed: '+e.message); res.redirect('/admin/tests/upload'); }
 };
 
 // ── PDF TEMPLATE ──────────────────────────────────────────────────────────────
