@@ -141,17 +141,42 @@ exports.reportViolation = async (req, res) => {
     const studentId = req.session.user.id;
     const { testId } = req.params;
     const { type } = req.body;
-    const result = await Result.findOne({ studentId, testId, status: 'in_progress' });
+    const [result, test] = await Promise.all([
+      Result.findOne({ studentId, testId, status: 'in_progress' }),
+      Test.findById(testId).select('autoSubmitOnViolation maxTabSwitches maxFocusLosses'),
+    ]);
     if (!result) return res.json({ success: false });
 
     const flags = result.cheatingFlags || { tabSwitches:0, fullscreenExits:0, focusLosses:0 };
-    if (type === 'tabSwitch')        flags.tabSwitches    = (flags.tabSwitches||0) + 1;
+    if (type === 'tabSwitch')           flags.tabSwitches    = (flags.tabSwitches||0) + 1;
     else if (type === 'fullscreenExit') flags.fullscreenExits = (flags.fullscreenExits||0) + 1;
-    else if (type === 'focusLoss')   flags.focusLosses    = (flags.focusLosses||0) + 1;
+    else if (type === 'focusLoss')      flags.focusLosses    = (flags.focusLosses||0) + 1;
 
     const violations = (flags.tabSwitches||0) + (flags.fullscreenExits||0) + (flags.focusLosses||0);
     await Result.findByIdAndUpdate(result._id, { cheatingFlags: flags, violationCount: violations });
-    return res.json({ success: true, violations, tabSwitches: flags.tabSwitches||0 });
+
+    // ── Auto-submit check ─────────────────────────────────────────────────
+    const maxSwitches = test?.maxTabSwitches ?? 3;
+    const maxFocusLosses = test?.maxFocusLosses ?? 5;
+    const shouldAutoSubmit = test?.autoSubmitOnViolation && (
+      (type === 'tabSwitch'    && flags.tabSwitches    >= maxSwitches) ||
+      (type === 'focusLoss'    && flags.focusLosses    >= maxFocusLosses) ||
+      (type === 'fullscreenExit' && flags.fullscreenExits >= 3)
+    );
+
+    const remaining = Math.max(0, maxSwitches - (flags.tabSwitches||0));
+    let warningLevel = remaining <= 1 ? 'danger' : 'warning';
+    let warningMsg = shouldAutoSubmit
+      ? 'Exam auto-submitted due to too many violations.'
+      : `⚠ Tab switch detected! ${remaining} more allowed.`;
+
+    return res.json({
+      success: true, violations,
+      tabSwitches: flags.tabSwitches||0,
+      focusLosses: flags.focusLosses||0,
+      autoSubmit: shouldAutoSubmit,
+      warningLevel, warningMsg,
+    });
   } catch (e) { console.error(e); return res.json({ success: false }); }
 };
 

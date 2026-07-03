@@ -344,13 +344,13 @@ function reportViolation(type, onAutoSubmit) {
     }
     // Update local counts
     if (type === 'tabSwitch') tabSwitchCount = d.tabSwitches || tabSwitchCount + 1;
-    if (type === 'focusLoss') focusLossCount++;
+    if (type === 'focusLoss') focusLossCount = d.focusLosses || focusLossCount + 1;
 
     // Show remaining warnings
     if (SETTINGS.autoSubmitOnViolation && type === 'tabSwitch') {
       const remaining = Math.max(0, SETTINGS.maxTabSwitches - tabSwitchCount);
       if (remaining > 0) {
-        showWarnBanner(`⚠ Tab switch warning! ${remaining} more allowed before auto-submit.`, d.warningLevel === 'danger' ? 'danger' : 'warning');
+        showWarnBanner(`⚠ Tab switch detected! ${remaining} more allowed before auto-submit.`, d.warningLevel === 'danger' ? 'danger' : 'warning');
       }
     }
     // Auto-submit if server says so
