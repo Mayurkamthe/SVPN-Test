@@ -30,47 +30,51 @@
         <% groups.forEach(g => {
           const studentCount = g.members ? g.members.filter(m => m.GroupMember?.role === 'student').length : 0;
         %>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5 card-lift relative group">
-          <a href="/admin/groups/<%= g.id %>" class="absolute inset-0 z-0" aria-label="View <%= g.name %>"></a>
-          <div class="flex items-start justify-between mb-4 relative z-10 pointer-events-none">
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5 card-lift">
+          <!-- Top: edit/delete icons -->
+          <div class="flex items-start justify-between mb-4">
             <div class="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center shrink-0">
               <svg class="w-5 h-5 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
             </div>
-            <div class="flex items-center gap-1.5 pointer-events-auto">
+            <div class="flex items-center gap-1.5">
               <span class="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">AY <%= g.academicYear %></span>
-              <button onclick="event.preventDefault(); event.stopPropagation(); openEditGroup('<%= g.id %>', `<%= g.name.replace(/`/g, '\\`') %>`, `<%= (g.description||'').replace(/`/g, '\\`') %>`, '<%= g.academicYear %>')"
+              <button onclick="openEditGroup('<%= g.id %>', `<%= g.name.replace(/`/g, '\\`') %>`, `<%= (g.description||'').replace(/`/g, '\\`') %>`, '<%= g.academicYear %>')"
                 class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shrink-0" title="Edit batch">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </button>
-              <button onclick="event.preventDefault(); event.stopPropagation(); openDeleteGroup('<%= g.id %>', `<%= g.name.replace(/`/g, '\\`') %>`)"
+              <button onclick="openDeleteGroup('<%= g.id %>', `<%= g.name.replace(/`/g, '\\`') %>`)"
                 class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-500 hover:text-rose-700 transition-colors shrink-0" title="Delete batch">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
               </button>
             </div>
           </div>
-          <h3 class="font-bold text-slate-900 mb-1 relative z-10 pointer-events-none"><%= g.name %></h3>
-          <p class="text-xs text-slate-400 mb-4 leading-relaxed relative z-10 pointer-events-none"><%= g.description || 'No description' %></p>
-          <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-50 relative z-10 pointer-events-none">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20H3v-1a6 6 0 0114 0v1zm7 0h-3v-1a4.5 4.5 0 00-3.21-4.3M15 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-              <strong class="text-slate-700"><%= studentCount %></strong> students
-            </span>
-            <div class="flex -space-x-1.5">
-              <% if (g.members && g.members.length > 0) {
-                g.members.slice(0,5).forEach(m => { %>
-              <div class="w-6 h-6 rounded-full bg-navy-200 border-2 border-white flex items-center justify-center text-navy-700 font-bold text-[9px]" title="<%= m.name %>">
-                <%= m.name.charAt(0).toUpperCase() %>
+
+          <!-- Clickable body → group detail -->
+          <a href="/admin/groups/<%= g.id %>" class="block hover:opacity-80 transition-opacity">
+            <h3 class="font-bold text-slate-900 mb-1"><%= g.name %></h3>
+            <p class="text-xs text-slate-400 mb-4 leading-relaxed"><%= g.description || 'No description' %></p>
+            <div class="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-50">
+              <span class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20H3v-1a6 6 0 0114 0v1zm7 0h-3v-1a4.5 4.5 0 00-3.21-4.3M15 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                <strong class="text-slate-700"><%= studentCount %></strong> students
+              </span>
+              <div class="flex -space-x-1.5">
+                <% if (g.members && g.members.length > 0) {
+                  g.members.slice(0,5).forEach(m => { %>
+                <div class="w-6 h-6 rounded-full bg-navy-200 border-2 border-white flex items-center justify-center text-navy-700 font-bold text-[9px]" title="<%= m.name %>">
+                  <%= m.name.charAt(0).toUpperCase() %>
+                </div>
+                <% }) %>
+                <% if (g.members.length > 5) { %>
+                <div class="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-500 text-[9px] font-semibold">
+                  +<%= g.members.length - 5 %>
+                </div>
+                <% } } else { %>
+                <span class="text-slate-300">No members</span>
+                <% } %>
               </div>
-              <% }) %>
-              <% if (g.members.length > 5) { %>
-              <div class="w-6 h-6 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center text-slate-500 text-[9px] font-semibold">
-                +<%= g.members.length - 5 %>
-              </div>
-              <% } } else { %>
-              <span class="text-slate-300">No members</span>
-              <% } %>
             </div>
-          </div>
+          </a>
           <div class="mt-3 pt-3 border-t border-slate-50 flex items-center gap-2 flex-wrap relative z-10">
             <button onclick="event.preventDefault(); event.stopPropagation(); openAddStudent('<%= g.id %>', `<%= g.name.replace(/`/g, '\\`') %>`)"
               class="text-[11px] font-semibold bg-navy-950 text-white px-3 py-1.5 rounded-lg hover:bg-navy-900 transition-colors flex items-center gap-1.5">
