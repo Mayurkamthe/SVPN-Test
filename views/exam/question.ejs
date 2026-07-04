@@ -94,14 +94,15 @@
         </a>
         <% } else { %><div></div><% } %>
 
-        <% if (questionNumber < totalQuestions) { %>
-        <a href="/exam/<%= test.id %>/question/<%= questionNumber+1 %>" onclick="saveAndNav(event, this.href)"
-          class="flex items-center gap-2 bg-navy-950 hover:bg-navy-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">
-          Save &amp; Next <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <% } else { %>
-        <button onclick="submitConfirm()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">Submit Exam</button>
-        <% } %>
+        <div class="flex items-center gap-2">
+          <button onclick="submitConfirm()" class="bg-rose-600 hover:bg-rose-700 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">Submit Exam</button>
+          <% if (questionNumber < totalQuestions) { %>
+          <a href="/exam/<%= test.id %>/question/<%= questionNumber+1 %>" onclick="saveAndNav(event, this.href)"
+            class="flex items-center gap-2 bg-navy-950 hover:bg-navy-900 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm">
+            Save &amp; Next <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+          <% } %>
+        </div>
       </div>
     </div>
 
