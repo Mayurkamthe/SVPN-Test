@@ -425,9 +425,26 @@ document.addEventListener('cut',   e => e.preventDefault());
 document.addEventListener('keydown', e => {
   if (e.key==='F12' || (e.ctrlKey&&e.shiftKey&&['I','J','C'].includes(e.key)) || (e.ctrlKey&&['u','s','a'].includes(e.key))) e.preventDefault();
 });
-function _beforeUnload(e) { e.preventDefault(); e.returnValue = ''; }
+// ── Auto-submit on leave (beacon) ──────────────────────────────────────────
+let _leaveAllowed = false;
+function allowLeave() { _leaveAllowed = true; }
+
+function _beforeUnload(e) {
+  if (_leaveAllowed) return;
+  // Save current answer + trigger auto-submit via beacon (works even on navigation)
+  const blob = new Blob([JSON.stringify({
+    questionId: '<%= question._id %>',
+    answer: currentAnswer,
+    markForReview: document.getElementById('markReviewCheck')?.checked ? 'true' : 'false',
+    timeSpent: 0,
+    autoSubmit: true,
+  })], { type: 'application/json' });
+  navigator.sendBeacon('/exam/<%= test.id %>/leave', blob);
+  // Show browser confirmation so student can cancel accidental navigation
+  e.preventDefault();
+  e.returnValue = 'Your answers will be submitted automatically if you leave.';
+}
 window.addEventListener('beforeunload', _beforeUnload);
-function allowLeave() { window.removeEventListener('beforeunload', _beforeUnload); }
 function saveAndSubmit() {
   allowLeave();
   saveToServer(currentAnswer).finally(() => {

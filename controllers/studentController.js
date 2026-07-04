@@ -82,17 +82,46 @@ exports.getDashboard = async (req, res) => {
 exports.getTests = async (req, res) => {
   try {
     const studentId = req.session.user.id;
+    const now = new Date();
     const [memberships, results] = await Promise.all([
       GroupMember.find({ userId: studentId }, 'groupId'),
-      Result.find({ studentId }, 'testId score totalMarks status rank'),
+      Result.find({ studentId }, 'testId score totalMarks status rank submittedAt'),
     ]);
     const groupIds = memberships.map(m => m.groupId);
     const tests = groupIds.length
       ? await Test.find({ groups: { $in: groupIds }, status: { $in: ['published','active','closed'] } }).sort({ createdAt: -1 })
       : [];
+
     const resultMap = {};
     results.forEach(r => { resultMap[r.testId.toString()] = r; });
-    res.render('student/tests', { title: 'My Tests', tests, resultMap });
+
+    // Categorise tests
+    const newTests      = [];
+    const pendingTests  = [];
+    const expiredTests  = [];
+    const solvedTests   = [];
+
+    tests.forEach(test => {
+      const result  = resultMap[test._id.toString()];
+      const isDone  = result && ['submitted','auto_submitted'].includes(result.status);
+      const isInProg = result && result.status === 'in_progress';
+      const isExpired = test.endTime && new Date(test.endTime) < now;
+      const isStarted = !test.startTime || new Date(test.startTime) <= now;
+
+      if (isDone) {
+        solvedTests.push({ test, result });
+      } else if (isExpired) {
+        expiredTests.push({ test, result: result || null });
+      } else if (isInProg) {
+        pendingTests.push({ test, result });
+      } else if (isStarted) {
+        newTests.push({ test, result: null });
+      } else {
+        newTests.push({ test, result: null }); // upcoming but not expired
+      }
+    });
+
+    res.render('student/tests', { title: 'My Tests', newTests, pendingTests, expiredTests, solvedTests, resultMap });
   } catch (err) { req.flash('error', 'Failed to load tests.'); res.redirect('/student/dashboard'); }
 };
 

@@ -236,6 +236,45 @@ exports.submitExam = async (req, res) => {
 
 exports.autoSubmit = async (req, res) => { req.body = { auto:'true' }; return exports.submitExam(req, res); };
 
+// Called via navigator.sendBeacon when student navigates away mid-exam
+exports.leaveExam = async (req, res) => {
+  try {
+    const studentId = req.session?.user?.id;
+    const { testId } = req.params;
+    if (!studentId) return res.sendStatus(204);
+
+    const body = req.body || {};
+    const { questionId, answer, markForReview, timeSpent } = body;
+
+    const result = await Result.findOne({ studentId, testId, status: 'in_progress' });
+    if (!result) return res.sendStatus(204);
+
+    // Save the current answer first
+    if (questionId) {
+      const answers         = { ...(result.answers || {}) };
+      const questionTimings = { ...(result.questionTimings || {}) };
+      const markedForReview = [...(result.markedForReview || [])];
+
+      answers[questionId] = { answer: answer?.trim() || null, savedAt: new Date() };
+      if (timeSpent && !isNaN(timeSpent))
+        questionTimings[questionId] = (questionTimings[questionId] || 0) + parseInt(timeSpent);
+
+      const idx = markedForReview.indexOf(String(questionId));
+      if (markForReview === 'true') { if (idx === -1) markedForReview.push(String(questionId)); }
+      else { if (idx !== -1) markedForReview.splice(idx, 1); }
+
+      await Result.findByIdAndUpdate(result._id, { answers, questionTimings, markedForReview });
+    }
+
+    // Auto-submit
+    req.body = { auto: 'true' };
+    return exports.submitExam(req, res);
+  } catch (e) {
+    console.error('leaveExam error:', e);
+    return res.sendStatus(204);
+  }
+};
+
 async function updateRanks(testId) {
   const results = await Result.find({ testId, status: { $in: ['submitted','auto_submitted'] } })
     .sort({ score: -1, timeTaken: 1 });
