@@ -1,76 +1,184 @@
 <%- include('../partials/head') %>
 <div class="flex h-screen overflow-hidden">
   <%- include('../partials/sidebar-student') %>
-  <main class="lg:ml-64 flex-1 overflow-y-auto">
+  <main class="lg:ml-64 flex-1 overflow-y-auto bg-slate-50">
     <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-5 lg:px-8 py-4 flex items-center gap-4">
       <button onclick="openSidebar()" class="lg:hidden text-slate-500 hover:text-slate-800">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div>
         <h1 class="text-lg font-bold text-slate-900">My Tests</h1>
-        <p class="text-xs text-slate-400"><%= tests.length %> assigned</p>
+        <p class="text-xs text-slate-400"><%= newTests.length + pendingTests.length %> available &middot; <%= solvedTests.length %> completed</p>
       </div>
     </header>
-    <div class="p-5 lg:p-8">
+
+    <div class="p-5 lg:p-8 space-y-8">
       <%- include('../partials/flash') %>
-      <% if (tests.length === 0) { %>
-      <div class="text-center py-20">
+
+      <%
+        function fmtDate(d) {
+          if (!d) return '';
+          return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        }
+      %>
+
+      <!-- ── NEW / UPCOMING TESTS ─────────────────────────────────────────── -->
+      <section>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">New Tests</h2>
+          <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full"><%= newTests.length %></span>
+        </div>
+        <% if (newTests.length === 0) { %>
+        <div class="bg-white rounded-2xl border border-slate-100 py-10 text-center text-slate-400 text-sm">No new tests right now.</div>
+        <% } else { %>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <% newTests.forEach(({ test }) => {
+            const now = new Date();
+            const started = !test.startTime || new Date(test.startTime) <= now;
+          %>
+          <div class="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex flex-col gap-3 card-lift">
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <% if (Array.isArray(test.subject) ? test.subject.length : test.subject) { %>
+              <span class="text-[11px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full"><%= Array.isArray(test.subject) ? test.subject.join(', ') : test.subject %></span>
+              <% } %>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
+              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+              <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
+              <% if (!started) { %><p class="text-[11px] text-amber-600 font-medium mt-1">Opens: <%= fmtDate(test.startTime) %></p><% } %>
+            </div>
+            <% if (started) { %>
+            <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors text-sm flex items-center justify-center gap-2">
+              Start Exam
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </a>
+            <% } else { %>
+            <button disabled class="mt-auto w-full text-center font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl text-sm cursor-not-allowed">Not Started Yet</button>
+            <% } %>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
+      </section>
+
+      <!-- ── IN PROGRESS ──────────────────────────────────────────────────── -->
+      <% if (pendingTests.length > 0) { %>
+      <section>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
+          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">In Progress</h2>
+          <span class="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full"><%= pendingTests.length %></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <% pendingTests.forEach(({ test }) => { %>
+          <div class="bg-white rounded-2xl border border-amber-200 shadow-sm p-5 flex flex-col gap-3 card-lift">
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="text-[11px] bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">In Progress</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
+              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+              <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
+            </div>
+            <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center font-semibold bg-amber-600 text-white py-2.5 rounded-xl hover:bg-amber-700 transition-colors text-sm flex items-center justify-center gap-2">
+              Resume Exam
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </a>
+          </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <!-- ── COMPLETED ─────────────────────────────────────────────────────── -->
+      <% if (solvedTests.length > 0) { %>
+      <section>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Completed</h2>
+          <span class="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full"><%= solvedTests.length %></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <% solvedTests.forEach(({ test, result }) => {
+            const pct = result && result.totalMarks > 0 ? ((result.score/result.totalMarks)*100).toFixed(1) : null;
+            const clr = pct ? (pct>=60?'emerald':pct>=40?'amber':'rose') : 'slate';
+          %>
+          <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 flex flex-col gap-3">
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="text-[11px] bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Completed</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
+              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+              <% if (result && result.submittedAt) { %><p class="text-[11px] text-slate-400 mt-1">Submitted: <%= fmtDate(result.submittedAt) %></p><% } %>
+            </div>
+            <% if (pct !== null) { %>
+            <div class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+              <span class="font-bold text-xl text-<%= clr %>-600"><%= pct %>%</span>
+              <div class="text-right">
+                <p class="text-xs font-semibold text-slate-700"><%= result.score %> / <%= result.totalMarks %></p>
+                <% if (result.rank) { %><p class="text-[11px] text-slate-400">Rank #<%= result.rank %></p><% } %>
+              </div>
+            </div>
+            <% } %>
+            <div class="flex gap-2 mt-auto">
+              <a href="/results/<%= result.id %>" class="flex-1 text-center text-sm font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors">View Result</a>
+              <a href="/results/leaderboard/<%= test.id %>" class="w-11 flex items-center justify-center border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" title="Leaderboard">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </a>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <!-- ── EXPIRED ───────────────────────────────────────────────────────── -->
+      <% if (expiredTests.length > 0) { %>
+      <section>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Expired</h2>
+          <span class="text-xs bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full"><%= expiredTests.length %></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <% expiredTests.forEach(({ test }) => { %>
+          <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col gap-3 opacity-60">
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="text-[11px] bg-slate-100 text-slate-500 font-semibold px-2 py-0.5 rounded-full">Expired</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-700 text-sm leading-snug"><%= test.title %></h3>
+              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+              <% if (test.endTime) { %><p class="text-[11px] text-rose-400 font-medium mt-1">Ended: <%= fmtDate(test.endTime) %></p><% } %>
+            </div>
+            <button disabled class="mt-auto w-full text-center font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl text-sm cursor-not-allowed">Expired</button>
+          </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+      <!-- ── EMPTY STATE ───────────────────────────────────────────────────── -->
+      <% if (newTests.length + pendingTests.length + solvedTests.length + expiredTests.length === 0) { %>
+      <div class="text-center py-24">
         <svg class="w-16 h-16 text-slate-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         <p class="font-medium text-slate-500">No tests assigned yet.</p>
         <p class="text-sm text-slate-400 mt-1">Check back later or contact your admin.</p>
-      </div>
-      <% } else { %>
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-        <% tests.forEach(test => {
-          const result = resultMap[test.id];
-          const isDone = result && ['submitted','auto_submitted'].includes(result.status);
-          const pct = isDone && result.totalMarks > 0 ? ((result.score/result.totalMarks)*100).toFixed(1) : null;
-          const clr = pct ? (pct>=60?'emerald':pct>=40?'amber':'rose') : null;
-        %>
-        <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5 flex flex-col card-lift">
-          <div class="flex items-start justify-between mb-4">
-            <div class="w-10 h-10 bg-navy-100 rounded-xl flex items-center justify-center shrink-0">
-              <svg class="w-5 h-5 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-            </div>
-            <span class="<%= isDone ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' %> text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0">
-              <%= isDone ? 'Completed' : 'Pending' %>
-            </span>
-          </div>
-          <h3 class="font-bold text-slate-900 text-sm mb-1 flex-1 leading-snug"><%= test.title %></h3>
-          <% if (test.subject) { %>
-          <p class="text-xs text-slate-400 mb-3 font-medium"><%= test.subject %></p>
-          <% } %>
-          <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 bg-slate-50 rounded-xl p-3 mb-4">
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <%= test.duration %> mins
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-              <%= test.totalMarks %> marks
-            </span>
-          </div>
-          <% if (isDone) { %>
-          <div class="flex items-center justify-between mb-3">
-            <span class="font-bold text-2xl text-<%= clr %>-600"><%= pct %>%</span>
-            <% if (result.rank) { %>
-            <span class="text-xs text-slate-400 font-medium">Rank #<%= result.rank %></span>
-            <% } %>
-          </div>
-          <div class="flex gap-2">
-            <a href="/results/<%= result.id %>" class="flex-1 text-center text-sm font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors">View Result</a>
-            <a href="/results/leaderboard/<%= test.id %>" class="w-11 flex items-center justify-center border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
-              <svg class="w-4.5 h-4.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-            </a>
-          </div>
-          <% } else { %>
-          <a href="/exam/<%= test.id %>/instructions" class="w-full text-center font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors text-sm flex items-center justify-center gap-2">
-            Start Exam
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-          </a>
-          <% } %>
-        </div>
-        <% }) %>
       </div>
       <% } %>
     </div>
