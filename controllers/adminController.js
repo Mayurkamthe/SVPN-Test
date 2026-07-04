@@ -719,3 +719,116 @@ exports.downloadPdfTestTemplate = (req, res) => {
     doc.end();
   } catch (e) { console.error(e); res.status(500).send('Template failed: '+e.message); }
 };
+
+// ── ANSWER KEY TEMPLATE ───────────────────────────────────────────────────────
+exports.downloadAnswerKeyTemplate = (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=answer_key_template.pdf');
+    doc.pipe(res);
+
+    const W = 595.28, pageW = W - 100;
+    const NAVY = '#1e3a5f', GREEN = '#166534', LIGHT_GREEN = '#f0fdf4',
+          BORDER_GREEN = '#bbf7d0', SLATE = '#374151';
+
+    const drawHeader = () => {
+      doc.rect(50, 40, pageW, 34).fill(NAVY);
+      doc.fillColor('#ffffff').fontSize(13).font('Helvetica-Bold').text('ANSWER KEY', 58, 48);
+      doc.fontSize(9).font('Helvetica').text('Fill in your actual answers below and upload as Solution PDF', 58, 62);
+      doc.fontSize(9).font('Helvetica-Bold').text('MODEL ANSWERS & EXPLANATIONS', 58, 48, { width: pageW, align: 'right' });
+      doc.moveTo(50, 80).lineTo(W - 50, 80).strokeColor('#cbd5e1').lineWidth(0.5).stroke();
+    };
+
+    const drawRow = (qNum, ans, subject, topic, explanation, marks) => {
+      if (doc.y > 730) { doc.addPage(); drawHeader(); doc.y = 95; }
+      const y = doc.y + 3;
+      const rowH = explanation ? 60 : 34;
+      if (qNum % 2 === 0) doc.rect(50, y, pageW, rowH).fill('#f8fafc');
+      doc.roundedRect(54, y + 7, 26, 20, 4).fill(NAVY);
+      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold').text('Q' + qNum, 54, y + 11, { width: 26, align: 'center' });
+      doc.circle(110, y + 17, 10).fill(GREEN);
+      doc.fillColor('#ffffff').fontSize(11).font('Helvetica-Bold').text(ans, 101, y + 11, { width: 20, align: 'center' });
+      doc.fillColor('#64748b').fontSize(7.5).font('Helvetica').text(subject + (topic ? '  \xb7  ' + topic : ''), 128, y + 7);
+      doc.fillColor(GREEN).fontSize(8).font('Helvetica-Bold').text('+' + marks + ' mark' + (marks !== 1 ? 's' : ''), 128, y + 18);
+      if (explanation) {
+        doc.rect(128, y + 30, pageW - 82, rowH - 36).fill(LIGHT_GREEN).strokeColor(BORDER_GREEN).lineWidth(0.5).stroke();
+        doc.fillColor(GREEN).fontSize(7.5).font('Helvetica-Bold').text('Explanation: ', 132, y + 35, { continued: true });
+        doc.fillColor(SLATE).font('Helvetica').text(explanation, { width: pageW - 92 });
+      }
+      doc.y = y + rowH + 2;
+    };
+
+    drawHeader();
+    doc.y = 90;
+
+    doc.rect(50, doc.y, pageW, 26).fill('#eff6ff').strokeColor('#bfdbfe').lineWidth(0.5).stroke();
+    doc.fillColor('#1e40af').fontSize(8).font('Helvetica-Bold').text('HOW TO USE:  ', 58, doc.y + 5, { continued: true });
+    doc.font('Helvetica').text('Replace Q numbers, answers (A/B/C/D), subject, topic, marks and explanation with your actual exam answers. Upload this as the Solution PDF when creating a test.', { width: pageW - 20 });
+    doc.y += 32;
+
+    doc.rect(50, doc.y, pageW, 18).fill('#e2e8f0');
+    doc.fillColor('#475569').fontSize(8).font('Helvetica-Bold')
+       .text('Q', 58, doc.y + 5)
+       .text('Ans', 96, doc.y + 5)
+       .text('Subject  /  Topic', 128, doc.y + 5)
+       .text('Marks', W - 90, doc.y + 5);
+    doc.y += 22;
+
+    const rows = [
+      { q:1,  a:'B', sub:'Physics',     top:'Laws of Motion',    m:2, exp:'F=ma => a=4 m/s2. v = u + at = 10 + 4x3 = 22 m/s.' },
+      { q:2,  a:'A', sub:'Physics',     top:'Optics',            m:3, exp:'Convex lens forms real inverted image when object is beyond F.' },
+      { q:3,  a:'C', sub:'Chemistry',   top:'Chemical Bonding',  m:1, exp:'2 lone pairs in H2O compress bond angle to ~104.5 degrees.' },
+      { q:4,  a:'D', sub:'Chemistry',   top:'Organic Chemistry', m:2, exp:'COOH functional group = Carboxylic Acid.' },
+      { q:5,  a:'A', sub:'Mathematics', top:'Integration',       m:4, exp:'Integral(2x3)=x4/2, Integral(3x2)=x3, Integral(-x)=-x2/2, Integral(5)=5x. Add C.' },
+      { q:6,  a:'C', sub:'Physics',     top:'Kinematics',        m:2, exp:'' },
+      { q:7,  a:'B', sub:'Chemistry',   top:'Periodic Table',    m:1, exp:'' },
+      { q:8,  a:'D', sub:'Mathematics', top:'Calculus',          m:2, exp:'' },
+      { q:9,  a:'A', sub:'Biology',     top:'Cell Biology',      m:1, exp:'' },
+      { q:10, a:'B', sub:'Physics',     top:'Thermodynamics',    m:2, exp:'' },
+    ];
+    rows.forEach(function(r) { drawRow(r.q, r.a, r.sub, r.top, r.exp, r.m); });
+
+    doc.addPage();
+    drawHeader();
+    doc.y = 95;
+
+    doc.fillColor(NAVY).fontSize(11).font('Helvetica-Bold').text('SUBJECT-WISE SUMMARY', 50, doc.y);
+    doc.y += 18;
+
+    const cols = [50, 220, 310, 400];
+    const hdrs = ['Subject', 'Questions', 'Total Marks', 'Notes'];
+    doc.rect(50, doc.y, pageW, 20).fill(NAVY);
+    hdrs.forEach(function(h, i) { doc.fillColor('#fff').fontSize(8.5).font('Helvetica-Bold').text(h, cols[i] + 4, doc.y + 6, { width: 90 }); });
+    doc.y += 22;
+
+    var summaryRows = [
+      { sub:'Physics', qs:4, marks:9 },
+      { sub:'Chemistry', qs:3, marks:4 },
+      { sub:'Mathematics', qs:2, marks:6 },
+      { sub:'Biology', qs:1, marks:1 },
+    ];
+    summaryRows.forEach(function(s, i) {
+      var ry = doc.y;
+      if (i % 2 === 0) doc.rect(50, ry, pageW, 20).fill('#f8fafc');
+      doc.fillColor(SLATE).fontSize(9).font('Helvetica-Bold').text(s.sub, cols[0]+4, ry+6);
+      doc.font('Helvetica').text(String(s.qs), cols[1]+4, ry+6).text(String(s.marks), cols[2]+4, ry+6).text('', cols[3]+4, ry+6);
+      doc.moveTo(50, ry+20).lineTo(W-50, ry+20).strokeColor('#e2e8f0').lineWidth(0.4).stroke();
+      doc.y = ry + 22;
+    });
+
+    doc.rect(50, doc.y, pageW, 22).fill(NAVY);
+    doc.fillColor('#fff').fontSize(9).font('Helvetica-Bold')
+       .text('TOTAL', cols[0]+4, doc.y+7)
+       .text('10', cols[1]+4, doc.y+7)
+       .text('20', cols[2]+4, doc.y+7);
+    doc.y += 30;
+
+    doc.rect(50, doc.y, pageW, 34).fill('#fefce8').strokeColor('#fde047').lineWidth(0.5).stroke();
+    doc.fillColor('#713f12').fontSize(8).font('Helvetica-Bold').text('TIP:  ', 58, doc.y + 6, { continued: true });
+    doc.font('Helvetica').text('Edit this PDF in Adobe Acrobat, LibreOffice Draw or Canva. Replace sample values with your actual exam answers. Keep the same layout. Upload as Solution PDF when creating a test.', { width: pageW - 16 });
+
+    doc.end();
+  } catch (e) { console.error(e); res.status(500).send('Answer key template failed: ' + e.message); }
+};

@@ -54,6 +54,7 @@ router.get('/tests/create',               ...guard, c.getCreateTest);
 router.post('/tests',                     ...guard, c.createTest);
 router.post('/tests/upload-pdf',          ...guard, c.uploadPdfTest);
 router.get('/tests/template/pdf',         ...guard, c.downloadPdfTestTemplate);
+router.get('/tests/template/answer-key',  ...guard, c.downloadAnswerKeyTemplate);
 router.get('/tests/:id',                  ...guard, c.getTestDetail);
 router.get('/tests/:id/edit',             ...guard, c.getEditTest);
 router.post('/tests/:id/edit',            ...guard, c.updateTest);
