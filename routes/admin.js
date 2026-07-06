@@ -18,6 +18,7 @@ router.post('/students/:id/delete',  ...guard, c.deleteStudent);
 router.get('/groups',                          ...guard, c.getGroups);
 router.post('/groups',                         ...guard, c.createGroup);
 router.get('/groups/template/download',        ...guard, c.downloadStudentTemplate);
+router.post('/groups/assign-member',           ...guard, c.assignMember);
 router.get('/groups/:id',                      ...guard, c.getGroupDetail);
 router.post('/groups/:id',                     ...guard, c.updateGroup);
 router.post('/groups/:id/delete',              ...guard, c.deleteGroup);
@@ -26,7 +27,6 @@ router.post('/groups/:id/bulk-import',         ...guard, c.bulkImportStudents);
 router.post('/groups/:id/add-student',         ...guard, c.createStudent);
 router.post('/groups/:id/students/:studentId/remove', ...guard, c.removeStudentFromGroup);
 router.post('/groups/:id/students/:studentId/move',   ...guard, c.moveStudentToGroup);
-router.post('/groups/assign-member',           ...guard, c.assignMember);
 
 // Content hierarchy
 router.get('/topics',        ...guard, c.getTopics);
