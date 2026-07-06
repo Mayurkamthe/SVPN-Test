@@ -1,180 +1,130 @@
 <%- include('../partials/head') %>
 <div class="flex h-screen overflow-hidden">
-  <%- include('../partials/sidebar-student') %>
-  <main class="lg:ml-64 flex-1 overflow-y-auto bg-slate-50">
-
+  <%- include('../partials/sidebar-admin') %>
+  <main class="lg:ml-64 flex-1 overflow-y-auto">
     <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-5 lg:px-8 py-4 flex items-center gap-4">
       <button onclick="openSidebar()" class="lg:hidden text-slate-500 hover:text-slate-800">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-      <div>
-        <h1 class="text-lg font-bold text-slate-900">My Tests</h1>
-        <p class="text-xs text-slate-400"><%= newTests.length + pendingTests.length %> available &middot; <%= solvedTests.length %> completed</p>
+      <div class="flex-1">
+        <h1 class="text-lg font-bold text-slate-900">Tests</h1>
+        <p class="text-xs text-slate-400"><%= tests.length %> test<%= tests.length !== 1 ? 's' : '' %></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="/admin/tests/upload" class="flex items-center gap-1.5 text-xs font-semibold border border-slate-200 text-slate-700 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Upload PDF
+        </a>
+        <a href="/admin/tests/create" class="flex items-center gap-1.5 text-xs font-semibold bg-navy-950 text-white px-3 py-2 rounded-lg hover:bg-navy-800 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Create Test
+        </a>
       </div>
     </header>
 
-    <div class="p-5 lg:p-8 space-y-8">
+    <div class="p-5 lg:p-8">
       <%- include('../partials/flash') %>
 
-      <%
-        function fmtDate(d) {
-          if (!d) return '';
-          return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-        }
-      %>
-
-      <!-- ── NEW TESTS ──────────────────────────────────────────────────── -->
-      <section>
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">New Tests</h2>
-          <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full"><%= newTests.length %></span>
-        </div>
-        <% if (newTests.length === 0) { %>
-        <div class="bg-white rounded-2xl border border-slate-100 py-10 text-center text-slate-400 text-sm">No new tests right now.</div>
-        <% } else { %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          <% newTests.forEach(({ test }) => {
-            const now = new Date();
-            const started = !test.startTime || new Date(test.startTime) <= now;
-          %>
-          <div class="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex flex-col gap-3">
-            <div class="flex items-start justify-between">
-              <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              </div>
-              <% if (test.subject) { %><span class="text-[11px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full"><%= test.subject %></span><% } %>
-            </div>
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
-              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
-              <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
-              <% if (!started) { %><p class="text-[11px] text-amber-600 font-medium mt-1">Opens: <%= fmtDate(test.startTime) %></p><% } %>
-            </div>
-            <% if (started) { %>
-            <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center text-sm font-semibold bg-blue-600 text-white py-2.5 rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-              Start Exam <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-            </a>
-            <% } else { %>
-            <span class="mt-auto w-full text-center text-sm font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl cursor-not-allowed">Upcoming</span>
-            <% } %>
-          </div>
-          <% }) %>
-        </div>
+      <!-- Filters -->
+      <form method="GET" class="flex flex-wrap gap-2 mb-6">
+        <select name="course" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500">
+          <option value="">All Courses</option>
+          <% COURSES.forEach(c => { %><option value="<%= c %>" <%= filterCourse===c?'selected':'' %>><%= c %></option><% }) %>
+        </select>
+        <select name="subject" onchange="this.form.submit()" class="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-navy-500">
+          <option value="">All Subjects</option>
+          <% SUBJECTS.forEach(s => { %><option value="<%= s %>" <%= filterSubject===s?'selected':'' %>><%= s %></option><% }) %>
+        </select>
+        <% if (filterCourse || filterSubject) { %>
+        <a href="/admin/tests" class="border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-50">Clear</a>
         <% } %>
-      </section>
+      </form>
 
-      <!-- ── PENDING / IN-PROGRESS ──────────────────────────────────────── -->
-      <section>
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-2 h-2 rounded-full bg-amber-500"></div>
-          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Pending Tests</h2>
-          <span class="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full"><%= pendingTests.length %></span>
-        </div>
-        <% if (pendingTests.length === 0) { %>
-        <div class="bg-white rounded-2xl border border-slate-100 py-10 text-center text-slate-400 text-sm">No tests in progress.</div>
-        <% } else { %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          <% pendingTests.forEach(({ test }) => { %>
-          <div class="bg-white rounded-2xl border border-amber-200 shadow-sm p-5 flex flex-col gap-3">
-            <div class="flex items-start justify-between">
-              <div class="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </div>
-              <span class="text-[11px] bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">In Progress</span>
-            </div>
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
-              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
-              <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
-            </div>
-            <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center text-sm font-semibold bg-amber-500 text-white py-2.5 rounded-xl hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
-              Resume Exam <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-            </a>
-          </div>
-          <% }) %>
-        </div>
-        <% } %>
-      </section>
-
-      <!-- ── SOLVED TESTS ───────────────────────────────────────────────── -->
-      <section>
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
-          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Solved Tests</h2>
-          <span class="text-xs bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full"><%= solvedTests.length %></span>
-        </div>
-        <% if (solvedTests.length === 0) { %>
-        <div class="bg-white rounded-2xl border border-slate-100 py-10 text-center text-slate-400 text-sm">No completed tests yet.</div>
-        <% } else { %>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          <% solvedTests.forEach(({ test, result }) => {
-            const pct = result && result.totalMarks > 0 ? ((result.score / result.totalMarks) * 100).toFixed(1) : 0;
-            const clr = pct >= 60 ? 'emerald' : pct >= 40 ? 'amber' : 'rose';
-          %>
-          <div class="bg-white rounded-2xl border border-emerald-100 shadow-sm p-5 flex flex-col gap-3">
-            <div class="flex items-start justify-between">
-              <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </div>
-              <span class="text-[11px] bg-emerald-100 text-emerald-700 font-semibold px-2 py-0.5 rounded-full">Completed</span>
-            </div>
-            <div>
-              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
-              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
-            </div>
-            <% if (result) { %>
-            <div class="bg-slate-50 rounded-xl px-4 py-3 flex items-center justify-between">
-              <div>
-                <p class="text-2xl font-bold text-<%= clr %>-600"><%= pct %>%</p>
-                <p class="text-xs text-slate-400 mt-0.5"><%= result.score %>/<%= result.totalMarks %> marks</p>
-              </div>
-              <% if (result.rank) { %><span class="text-sm font-bold text-slate-500">Rank #<%= result.rank %></span><% } %>
-            </div>
-            <div class="flex gap-2 mt-auto">
-              <a href="/results/<%= result.id %>" class="flex-1 text-center text-sm font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-800 transition-colors">View Result</a>
-              <a href="/results/leaderboard/<%= test.id %>" class="w-11 flex items-center justify-center border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors" title="Leaderboard">
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+      <% if (!tests.length) { %>
+      <div class="text-center py-24">
+        <svg class="w-16 h-16 text-slate-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <p class="font-medium text-slate-500">No tests yet.</p>
+        <a href="/admin/tests/create" class="mt-3 inline-block text-sm text-navy-600 hover:underline">Create your first test</a>
+      </div>
+      <% } else { %>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <% tests.forEach(test => { %>
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5 flex flex-col gap-3 card-lift">
+          <!-- Header -->
+          <div class="flex items-start justify-between">
+            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full <%= test.status==='published'?'bg-emerald-100 text-emerald-700':test.status==='draft'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-500' %>">
+              <%= test.status.charAt(0).toUpperCase() + test.status.slice(1) %>
+            </span>
+            <div class="flex items-center gap-1">
+              <a href="/admin/tests/<%= test.id %>/edit" class="w-7 h-7 rounded-lg bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 transition-colors" title="Edit">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
               </a>
+              <button onclick="openDeleteTest('<%= test.id %>', `<%= test.title.replace(/`/g, '\\`') %>`)" class="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-500 transition-colors" title="Delete">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
             </div>
+          </div>
+
+          <!-- Title -->
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
+            <% if (test.description) { %><p class="text-xs text-slate-400 mt-1 line-clamp-2"><%= test.description %></p><% } %>
+          </div>
+
+          <!-- Meta -->
+          <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500">
+            <span><%= test.duration %> mins</span>
+            <span><%= test.totalMarks %> marks</span>
+            <span><%= (test.questions||[]).length %> Qs</span>
+            <% if (Array.isArray(test.subject) ? test.subject.length : test.subject) { %>
+            <span class="text-navy-600 font-medium"><%= Array.isArray(test.subject) ? test.subject.join(', ') : test.subject %></span>
             <% } %>
           </div>
-          <% }) %>
-        </div>
-        <% } %>
-      </section>
 
-      <!-- ── EXPIRED TESTS ──────────────────────────────────────────────── -->
-      <% if (expiredTests.length > 0) { %>
-      <section>
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-2 h-2 rounded-full bg-rose-400"></div>
-          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Expired Tests</h2>
-          <span class="text-xs bg-rose-100 text-rose-600 font-semibold px-2 py-0.5 rounded-full"><%= expiredTests.length %></span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          <% expiredTests.forEach(({ test }) => { %>
-          <div class="bg-white rounded-2xl border border-rose-100 shadow-sm p-5 flex flex-col gap-3 opacity-75">
-            <div class="flex items-start justify-between">
-              <div class="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              </div>
-              <span class="text-[11px] bg-rose-100 text-rose-500 font-semibold px-2 py-0.5 rounded-full">Expired</span>
-            </div>
-            <div>
-              <h3 class="font-bold text-slate-700 text-sm leading-snug"><%= test.title %></h3>
-              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
-              <% if (test.endTime) { %><p class="text-[11px] text-rose-400 font-medium mt-1">Expired: <%= fmtDate(test.endTime) %></p><% } %>
-            </div>
-            <span class="mt-auto w-full text-center text-sm font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl cursor-not-allowed">Expired</span>
+          <!-- Groups -->
+          <% if ((test.groups||[]).length) { %>
+          <div class="flex flex-wrap gap-1">
+            <% test.groups.forEach(g => { if(g) { %><span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium"><%= g.name %></span><% } }) %>
           </div>
-          <% }) %>
-        </div>
-      </section>
-      <% } %>
+          <% } %>
 
+          <!-- Actions -->
+          <div class="flex gap-2 mt-auto pt-1">
+            <a href="/admin/tests/<%= test.id %>" class="flex-1 text-center text-sm font-semibold border border-slate-200 py-2 rounded-lg hover:bg-slate-50 transition-colors">View</a>
+            <% if (test.status==='draft') { %>
+            <form action="/admin/tests/<%= test.id %>/publish" method="POST">
+              <button class="text-sm font-semibold bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors">Publish</button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+        <% }) %>
+      </div>
+      <% } %>
     </div>
   </main>
 </div>
-</body>
-</html>
+
+<!-- Delete Test Modal -->
+<div id="deleteTestModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+    <div class="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+      <svg class="w-7 h-7 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+    </div>
+    <h3 class="font-bold text-slate-900 mb-1.5">Delete Test?</h3>
+    <p class="text-sm text-slate-500 mb-5">Delete <strong id="deleteTestName"></strong>? This cannot be undone.</p>
+    <form id="deleteTestForm" action="" method="POST" class="flex gap-3">
+      <button type="submit" class="flex-1 bg-rose-600 text-white font-semibold py-3 rounded-xl hover:bg-rose-700">Yes, Delete</button>
+      <button type="button" onclick="document.getElementById('deleteTestModal').classList.add('hidden')" class="flex-1 border border-slate-200 text-slate-700 font-semibold py-3 rounded-xl hover:bg-slate-50">Cancel</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openDeleteTest(id, name) {
+  document.getElementById('deleteTestForm').action = '/admin/tests/' + id + '/delete';
+  document.getElementById('deleteTestName').textContent = name;
+  document.getElementById('deleteTestModal').classList.remove('hidden');
+}
+</script>
+</body></html>
