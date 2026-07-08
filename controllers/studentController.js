@@ -100,28 +100,30 @@ exports.getTests = async (req, res) => {
     const pendingTests  = [];
     const expiredTests  = [];
     const solvedTests   = [];
+    const upcomingTests = [];
+
 
     tests.forEach(test => {
-      const result  = resultMap[test._id.toString()];
-      const isDone  = result && ['submitted','auto_submitted'].includes(result.status);
+      const result   = resultMap[test._id.toString()];
+      const isDone   = result && ['submitted','auto_submitted'].includes(result.status);
       const isInProg = result && result.status === 'in_progress';
       const isExpired = test.endTime && new Date(test.endTime) < now;
-      const isStarted = !test.startTime || new Date(test.startTime) <= now;
+      const isOpen   = !test.startTime || new Date(test.startTime) <= now;
 
       if (isDone) {
         solvedTests.push({ test, result });
-      } else if (isExpired) {
+      } else if (isExpired && !isInProg) {
         expiredTests.push({ test, result: result || null });
       } else if (isInProg) {
-        pendingTests.push({ test, result });
-      } else if (isStarted) {
-        newTests.push({ test, result: null });
+        pendingTests.push({ test, result });          // resume
+      } else if (isOpen) {
+        newTests.push({ test, result: null });        // ready to start
       } else {
-        newTests.push({ test, result: null }); // upcoming but not expired
+        upcomingTests.push({ test, result: null });   // not open yet
       }
     });
 
-    res.render('student/tests', { title: 'My Tests', newTests, pendingTests, expiredTests, solvedTests, resultMap });
+    res.render('student/tests', { title: 'My Tests', newTests, pendingTests, expiredTests, solvedTests, upcomingTests, resultMap });
   } catch (err) { req.flash('error', 'Failed to load tests.'); res.redirect('/student/dashboard'); }
 };
 

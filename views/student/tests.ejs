@@ -8,7 +8,7 @@
       </button>
       <div>
         <h1 class="text-lg font-bold text-slate-900">My Tests</h1>
-        <p class="text-xs text-slate-400"><%= newTests.length + pendingTests.length %> available &middot; <%= solvedTests.length %> completed</p>
+        <p class="text-xs text-slate-400"><%= newTests.length %> available &middot; <%= pendingTests.length %> in progress &middot; <%= solvedTests.length %> completed</p>
       </div>
     </header>
 
@@ -33,10 +33,7 @@
         <div class="bg-white rounded-2xl border border-slate-100 py-10 text-center text-slate-400 text-sm">No new tests right now.</div>
         <% } else { %>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          <% newTests.forEach(({ test }) => {
-            const now = new Date();
-            const started = !test.startTime || new Date(test.startTime) <= now;
-          %>
+          <% newTests.forEach(({ test }) => { %>
           <div class="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex flex-col gap-3 card-lift">
             <div class="flex items-start justify-between">
               <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
@@ -52,14 +49,10 @@
               <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
               <% if (!started) { %><p class="text-[11px] text-amber-600 font-medium mt-1">Opens: <%= fmtDate(test.startTime) %></p><% } %>
             </div>
-            <% if (started) { %>
             <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors text-sm flex items-center justify-center gap-2">
               Start Exam
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
             </a>
-            <% } else { %>
-            <button disabled class="mt-auto w-full text-center font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl text-sm cursor-not-allowed">Not Started Yet</button>
-            <% } %>
           </div>
           <% }) %>
         </div>
@@ -138,6 +131,37 @@
                 <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
               </a>
             </div>
+          </div>
+          <% }) %>
+        </div>
+      </section>
+      <% } %>
+
+
+      <!-- ── UPCOMING (not open yet) ─────────────────────────────────────── -->
+      <% if (typeof upcomingTests !== 'undefined' && upcomingTests.length > 0) { %>
+      <section>
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+          <h2 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Upcoming</h2>
+          <span class="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full"><%= upcomingTests.length %></span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          <% upcomingTests.forEach(({ test }) => { %>
+          <div class="bg-white rounded-2xl border border-blue-100 shadow-sm p-5 flex flex-col gap-3 opacity-80">
+            <div class="flex items-start justify-between">
+              <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <span class="text-[11px] bg-blue-50 text-blue-500 font-semibold px-2 py-0.5 rounded-full">Upcoming</span>
+            </div>
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
+              <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
+              <% if (test.startTime) { %><p class="text-[11px] text-amber-600 font-medium mt-1">Opens: <%= fmtDate(test.startTime) %></p><% } %>
+              <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-0.5">Due: <%= fmtDate(test.endTime) %></p><% } %>
+            </div>
+            <button disabled class="mt-auto w-full text-center font-semibold bg-slate-100 text-slate-400 py-2.5 rounded-xl text-sm cursor-not-allowed">Not Open Yet</button>
           </div>
           <% }) %>
         </div>
