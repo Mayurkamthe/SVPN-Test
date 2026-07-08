@@ -8,7 +8,7 @@
       </button>
       <div>
         <h1 class="text-lg font-bold text-slate-900">Question Bank</h1>
-        <p class="text-sm text-slate-500"><%= total %> questions</p>
+        <p class="text-sm text-slate-500"><%= typeof total !== "undefined" ? total : questions.length %> questions</p>
       </div>
       <div class="flex gap-2">
         <button onclick="document.getElementById('addQModal').classList.remove('hidden')"
