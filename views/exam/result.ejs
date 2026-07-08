@@ -1,55 +1,103 @@
 <%- include('../partials/head') %>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<div class="min-h-screen bg-slate-50 py-10 px-4">
-  <div class="max-w-4xl mx-auto space-y-6">
+<div class="min-h-screen bg-slate-50 py-5 lg:py-10 px-4">
+  <div class="max-w-4xl mx-auto space-y-5">
 
     <!-- Score Hero -->
-    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div class="bg-gradient-to-r <%= percentage>=60?'from-green-600 to-emerald-600':percentage>=40?'from-yellow-500 to-amber-500':'from-red-600 to-rose-600' %> p-8 text-white text-center">
-        <p class="text-white/70 text-sm mb-1"><%= result.test.title %></p>
-        <div class="text-7xl font-bold mb-2"><%= percentage %>%</div>
-        <p class="text-2xl font-semibold"><%= result.score %> / <%= result.totalMarks %> Marks</p>
-        <p class="text-white/70 mt-1 text-sm"><%= result.status==='auto_submitted'?'Auto-submitted':'Submitted' %></p>
+    <div class="bg-white rounded-2xl shadow-card-md overflow-hidden">
+      <div class="<%= percentage>=60?'bg-gradient-to-r from-emerald-600 to-emerald-500':percentage>=40?'bg-gradient-to-r from-amber-500 to-amber-400':'bg-gradient-to-r from-rose-600 to-rose-500' %> px-5 py-8 text-white text-center">
+        <p class="text-white/70 text-sm mb-1 truncate"><%= result.test.title %></p>
+        <div class="text-5xl sm:text-7xl font-bold mb-2"><%= percentage %>%</div>
+        <p class="text-xl sm:text-2xl font-semibold"><%= result.score %> / <%= result.totalMarks %> Marks</p>
+        <div class="flex items-center justify-center gap-2 mt-2">
+          <% if (result.status === 'auto_submitted') { %>
+          <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span class="text-white/70 text-sm">Auto-submitted</span>
+          <% } else { %>
+          <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span class="text-white/70 text-sm">Submitted</span>
+          <% } %>
+        </div>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-5 divide-x divide-gray-100 border-b">
+
+      <!-- Stats — stacked 2+3 on mobile, single row on sm+ -->
+      <div class="grid grid-cols-3 sm:grid-cols-5 border-b border-slate-100">
         <% [
-          {icon:'🥇',label:'Rank',value:'#'+(result.rank||'—')},
-          {icon:'correct',label:'Correct',value:result.correctAnswers},
-          {icon:'wrong',label:'Wrong',value:result.wrongAnswers},
-          {icon:'skip',label:'Skipped',value:result.skippedAnswers},
-          {icon:'pct',label:'Percentile',value:(result.percentile||0).toFixed(1)+'%'},
+          {label:'Rank',      value:'#'+(result.rank||'—'),                       icon:'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z', c:'amber'},
+          {label:'Correct',   value:result.correctAnswers||0,                     icon:'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', c:'emerald'},
+          {label:'Wrong',     value:result.wrongAnswers||0,                        icon:'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z', c:'rose'},
+          {label:'Skipped',   value:result.skippedAnswers||0,                      icon:'M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z', c:'slate'},
+          {label:'Percentile',value:(result.percentile||0).toFixed(1)+'%',        icon:'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', c:'navy'},
         ].forEach(s => { %>
-        <div class="p-4 text-center">
-          <p class="text-xl mb-1"><%= s.icon %></p>
-          <p class="text-xl font-bold text-slate-900"><%= s.value %></p>
-          <p class="text-xs text-slate-500"><%= s.label %></p>
+        <div class="p-3 sm:p-4 text-center">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 mx-auto mb-1 text-<%= s.c==='navy'?'navy-500':s.c+'-500' %>" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="<%= s.icon %>"/></svg>
+          <p class="text-base sm:text-xl font-bold text-slate-900"><%= s.value %></p>
+          <p class="text-[10px] sm:text-xs text-slate-500 mt-0.5"><%= s.label %></p>
         </div>
         <% }) %>
       </div>
+
+      <!-- Meta row -->
+      <div class="px-5 py-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500 border-b border-slate-50">
+        <span><span class="font-semibold text-slate-700"><%= result.student.name %></span> &middot; Roll: <span class="font-mono"><%= result.student.rollNo %></span></span>
+        <span>Time: <strong><%= Math.floor((result.timeTaken||0)/60) %>m <%= (result.timeTaken||0)%60 %>s</strong></span>
+        <% if (result.violationCount > 0) { %>
+        <span class="text-rose-600 font-semibold flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <%= result.violationCount %> violation(s)
+        </span>
+        <% } %>
+        <span><%= result.submittedAt ? new Date(result.submittedAt).toLocaleString('en-IN') : '' %></span>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="px-5 py-4 flex flex-wrap gap-3">
+        <a href="/results/<%= result.id %>/pdf" class="flex items-center gap-2 bg-rose-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-rose-700 transition-colors text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download PDF
+        </a>
+        <a href="/results/leaderboard/<%= result.testId %>" class="flex items-center gap-2 bg-navy-950 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-navy-900 transition-colors text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z'/></svg>
+          Leaderboard
+        </a>
+        <% if (currentUser.role === 'student') { %>
+        <a href="/student/tests" class="flex items-center gap-2 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-semibold hover:bg-slate-50 transition-colors text-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+          Back to Tests
+        </a>
+        <% } %>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Charts grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
       <!-- Subject-wise Breakdown -->
       <% if (result.subjectScores && Object.keys(result.subjectScores).length > 0) { %>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h3 class="font-bold text-slate-900 mb-4">📚 Subject-wise Breakdown</h3>
-        <canvas id="subjectChart" height="200"></canvas>
-        <div class="mt-4 space-y-3">
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+        <h3 class="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          Subject-wise Breakdown
+        </h3>
+        <canvas id="subjectChart" class="max-h-44 mb-4"></canvas>
+        <div class="space-y-3">
           <% Object.entries(result.subjectScores).forEach(([subj, data]) => {
             const pct = data.total > 0 ? ((data.marks||0)/data.total*100).toFixed(0) : 0;
+            const clr = pct>=60?'emerald':pct>=40?'amber':'rose';
           %>
           <div>
             <div class="flex justify-between text-sm mb-1">
-              <span class="font-medium text-slate-700"><%= subj %></span>
-              <span class="font-bold <%= pct>=60?'text-green-600':pct>=40?'text-yellow-600':'text-red-500' %>"><%= data.marks||0 %>/<%= data.total||0 %> (<%= pct %>%)</span>
+              <span class="font-medium text-slate-700 truncate mr-2"><%= subj %></span>
+              <span class="font-bold text-<%= clr %>-600 shrink-0"><%= data.marks||0 %>/<%= data.total||0 %> (<%= pct %>%)</span>
             </div>
             <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-2 rounded-full <%= pct>=60?'bg-green-500':pct>=40?'bg-yellow-500':'bg-red-500' %>" style="width:<%= pct %>%"></div>
+              <div class="h-2 rounded-full bg-<%= clr %>-500" style="width:<%= pct %>%"></div>
             </div>
-            <div class="flex gap-3 text-xs text-slate-500 mt-1">
-              <span><%= data.correct %> correct</span><span><%= data.wrong %> wrong</span><span><%= data.skipped %> skipped</span>
+            <div class="flex gap-3 text-xs text-slate-400 mt-1">
+              <span class="text-emerald-600"><%= data.correct %> correct</span>
+              <span class="text-rose-500"><%= data.wrong %> wrong</span>
+              <span><%= data.skipped %> skipped</span>
             </div>
           </div>
           <% }) %>
@@ -57,59 +105,55 @@
       </div>
       <% } %>
 
-      <!-- Weak Topics -->
+      <!-- Topic Analysis -->
       <% if (result.topicScores && Object.keys(result.topicScores).length > 0) { %>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h3 class="font-bold text-slate-900 mb-4">🎯 Topic Analysis</h3>
-        <div class="space-y-3">
-          <% const sortedTopics = Object.entries(result.topicScores).sort((a,b) => {
-            const accA = a[1].correct/(a[1].correct+a[1].wrong+a[1].skipped||1);
-            const accB = b[1].correct/(b[1].correct+b[1].wrong+b[1].skipped||1);
-            return accA - accB; // weakest first
-          }) %>
-          <% sortedTopics.forEach(([topic, data]) => {
-            const total = data.correct + data.wrong + data.skipped;
-            const acc = total > 0 ? Math.round((data.correct/total)*100) : 0;
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+        <h3 class="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          Topic Analysis
+        </h3>
+        <div class="space-y-2 max-h-72 overflow-y-auto">
+          <% Object.entries(result.topicScores).sort((a,b)=>{
+            const tA=a[1].correct+a[1].wrong+a[1].skipped||1;
+            const tB=b[1].correct+b[1].wrong+b[1].skipped||1;
+            return (a[1].correct/tA)-(b[1].correct/tB);
+          }).forEach(([topic, data]) => {
+            const total = data.correct+data.wrong+data.skipped||1;
+            const acc = Math.round((data.correct/total)*100);
+            const clr = acc<50?'rose':acc<75?'amber':'emerald';
           %>
-          <div class="flex items-center gap-3 p-3 rounded-xl border <%= acc < 50 ? 'bg-red-50 border-red-200' : acc < 75 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200' %>">
-            <span class="text-lg"><%= acc<50?'🔴':acc<75?'🟡':'🟢' %></span>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-800"><%= topic %></p>
-              <p class="text-xs text-slate-500"><%= data.correct %> correct <%= data.wrong %> wrong <%= data.skipped %> skipped</p>
+          <div class="flex items-center gap-3 p-2.5 rounded-xl border border-<%= clr %>-200 bg-<%= clr %>-50">
+            <div class="w-2 h-2 rounded-full bg-<%= clr %>-500 shrink-0"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-slate-800 truncate"><%= topic %></p>
+              <p class="text-[10px] text-slate-500"><%= data.correct %> correct &middot; <%= data.wrong %> wrong &middot; <%= data.skipped %> skipped</p>
             </div>
-            <span class="font-bold text-sm <%= acc<50?'text-red-600':acc<75?'text-yellow-600':'text-green-600' %>"><%= acc %>%</span>
+            <span class="font-bold text-sm text-<%= clr %>-600 shrink-0"><%= acc %>%</span>
           </div>
           <% }) %>
         </div>
-        <% if (sortedTopics.filter(([,d])=>(d.correct/(d.correct+d.wrong+d.skipped||1))<0.5).length > 0) { %>
-        <div class="mt-4 bg-red-50 border border-red-200 rounded-xl p-3">
-          <p class="text-xs font-semibold text-red-700 mb-1">📌 Topics needing improvement:</p>
-          <% sortedTopics.filter(([,d])=>{ const t=d.correct+d.wrong+d.skipped; return t>0&&(d.correct/t)<0.5; }).forEach(([topic]) => { %>
-          <span class="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full mr-1 mb-1"><%= topic %></span>
-          <% }) %>
-        </div>
-        <% } %>
       </div>
       <% } %>
 
       <!-- Topper Comparison -->
       <% if (topperResult && topperResult.score > 0 && result.rank !== 1) { %>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h3 class="font-bold text-slate-900 mb-4">🏆 Your Score vs Topper</h3>
-        <canvas id="comparisonChart" height="200"></canvas>
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+        <h3 class="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z'/></svg>
+          Your Score vs Topper
+        </h3>
+        <canvas id="comparisonChart" class="max-h-44 mb-4"></canvas>
         <% if (topperResult.subjectScores && result.subjectScores) { %>
-        <div class="mt-4 space-y-2">
+        <div class="space-y-1.5">
           <% Object.entries(result.subjectScores).forEach(([subj, data]) => {
-            const topperData = topperResult.subjectScores[subj];
-            if (!topperData) return;
-            const myPct = data.total>0?Math.round((data.marks||0)/data.total*100):0;
-            const topPct = topperData.total>0?Math.round((topperData.marks||0)/topperData.total*100):0;
+            const td = topperResult.subjectScores[subj];
+            if (!td) return;
+            const myPct  = data.total>0?Math.round((data.marks||0)/data.total*100):0;
+            const topPct = td.total>0?Math.round((td.marks||0)/td.total*100):0;
           %>
-          <div class="text-xs">
-            <div class="flex justify-between mb-0.5">
-              <span class="text-slate-600 font-medium"><%= subj %></span>
-              <span class="text-slate-500">You: <span class="font-bold text-indigo-600"><%= myPct %>%</span> · Topper: <span class="font-bold text-amber-600"><%= topPct %>%</span></span>
-            </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600 font-medium truncate mr-2"><%= subj %></span>
+            <span class="shrink-0 text-slate-500">You: <strong class="text-navy-600"><%= myPct %>%</strong> &middot; Topper: <strong class="text-amber-600"><%= topPct %>%</strong></span>
           </div>
           <% }) %>
         </div>
@@ -119,51 +163,105 @@
 
       <!-- Performance Trend -->
       <% if (trend && trend.length > 1) { %>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h3 class="font-bold text-slate-900 mb-4">📈 Performance Trend</h3>
-        <canvas id="trendChart" height="200"></canvas>
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+        <h3 class="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+          Performance Trend
+        </h3>
+        <canvas id="trendChart" class="max-h-44"></canvas>
       </div>
       <% } %>
 
-      <!-- Question Time Analysis -->
+      <!-- Time per Question -->
       <% if (result.questionTimings && Object.keys(result.questionTimings).length > 0) { %>
-      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-        <h3 class="font-bold text-slate-900 mb-4">⏱ Time per Question</h3>
-        <canvas id="timeChart" height="200"></canvas>
-        <p class="text-xs text-slate-500 mt-3 text-center">Time distribution across all questions (seconds)</p>
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-card p-5">
+        <h3 class="font-bold text-slate-900 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Time per Question
+        </h3>
+        <canvas id="timeChart" class="max-h-44"></canvas>
+        <p class="text-xs text-slate-400 mt-2 text-center">Time in seconds per question</p>
       </div>
       <% } %>
 
-      <!-- Cheating/Violation Report -->
-      <% if (result.cheatingFlags && (result.cheatingFlags.tabSwitches>0 || result.cheatingFlags.fullscreenExits>0 || result.cheatingFlags.focusLosses>0)) { %>
-      <div class="bg-white rounded-2xl border border-red-200 shadow-sm p-6">
-        <h3 class="font-bold text-red-700 mb-4">⚠ Exam Integrity Report</h3>
+      <!-- Violation Report -->
+      <% if (result.cheatingFlags && (result.cheatingFlags.tabSwitches>0 || result.cheatingFlags.fullscreenExits>0)) { %>
+      <div class="bg-white rounded-2xl border border-rose-200 shadow-card p-5">
+        <h3 class="font-bold text-rose-700 mb-4 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Exam Integrity Report
+        </h3>
         <div class="space-y-2 text-sm">
-          <div class="flex justify-between py-2 border-b border-slate-50"><span class="text-slate-600">Tab Switches</span><span class="font-bold text-red-600"><%= result.cheatingFlags.tabSwitches||0 %></span></div>
-          <div class="flex justify-between py-2 border-b border-slate-50"><span class="text-slate-600">Fullscreen Exits</span><span class="font-bold text-red-600"><%= result.cheatingFlags.fullscreenExits||0 %></span></div>
-          <div class="flex justify-between py-2"><span class="text-slate-600">Focus Losses</span><span class="font-bold text-red-600"><%= result.cheatingFlags.focusLosses||0 %></span></div>
+          <div class="flex justify-between py-2 border-b border-slate-50"><span class="text-slate-600">Tab Switches</span><span class="font-bold text-rose-600"><%= result.cheatingFlags.tabSwitches||0 %></span></div>
+          <div class="flex justify-between py-2 border-b border-slate-50"><span class="text-slate-600">Fullscreen Exits</span><span class="font-bold text-rose-600"><%= result.cheatingFlags.fullscreenExits||0 %></span></div>
+          <div class="flex justify-between py-2"><span class="text-slate-600">Focus Losses</span><span class="font-bold text-rose-600"><%= result.cheatingFlags.focusLosses||0 %></span></div>
         </div>
       </div>
       <% } %>
-
     </div>
 
-    <!-- Details & Actions -->
-    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">
-        <div><span class="text-slate-500">Student</span><p class="font-semibold"><%= result.student.name %></p></div>
-        <div><span class="text-slate-500">Roll No</span><p class="font-semibold font-mono"><%= result.student.rollNo %></p></div>
-        <div><span class="text-slate-500">Time Taken</span><p class="font-semibold"><%= Math.floor((result.timeTaken||0)/60) %>m <%= (result.timeTaken||0)%60 %>s</p></div>
-        <div><span class="text-slate-500">Out of</span><p class="font-semibold"><%= totalAttempted %> students</p></div>
-        <div><span class="text-slate-500">Submitted</span><p class="font-semibold"><%= result.submittedAt?new Date(result.submittedAt).toLocaleString('en-IN'):'—' %></p></div>
-        <div><span class="text-slate-500">Violations</span><p class="font-semibold <%= result.violationCount>0?'text-red-600':'' %>"><%= result.violationCount||0 %></p></div>
+    <!-- Question Review -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-50">
+        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+          <svg class="w-4 h-4 text-navy-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          Question-by-Question Review
+        </h3>
       </div>
-      <div class="flex flex-wrap gap-3">
-        <a href="/results/<%= result.id %>/pdf" class="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-red-700 transition-colors text-sm">📄 Download PDF</a>
-        <a href="/results/leaderboard/<%= result.testId %>" class="flex items-center gap-2 bg-primary-800 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-primary-900 transition-colors text-sm">🏆 Leaderboard</a>
-        <% if (currentUser.role==='student') { %>
-        <a href="/student/tests" class="flex items-center gap-2 bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-200 transition-colors text-sm">← Back to Tests</a>
-        <% } %>
+      <div class="divide-y divide-slate-50">
+        <% const answers = result.answers || {};
+           result.test.questions.forEach((q, idx) => {
+          const given   = (answers[String(q.id)] || answers[q.id])?.answer || null;
+          const correct = q.correctAnswer;
+          const isRight = given && given === correct;
+          const isSkip  = !given;
+          const clr     = isSkip?'slate':isRight?'emerald':'rose';
+          const optMap  = {A:q.optionA, B:q.optionB, C:q.optionC, D:q.optionD};
+        %>
+        <div class="px-5 py-4">
+          <div class="flex items-start gap-3">
+            <div class="w-7 h-7 rounded-full bg-<%= clr %>-<%= isSkip?'200':'500' %> flex items-center justify-center text-<%= isSkip?'slate-500':'white' %> text-xs font-bold shrink-0 mt-0.5">
+              <%= idx+1 %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-slate-900 leading-relaxed mb-3"><%= q.question %></p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-3">
+                <% ['A','B','C','D'].forEach(key => {
+                  const val = optMap[key];
+                  if (!val) return;
+                  const isCorrectOpt = key === correct;
+                  const isGivenOpt   = key === given;
+                  let cls = 'border-slate-200 text-slate-600 bg-slate-50';
+                  if (isCorrectOpt) cls = 'border-emerald-400 text-emerald-800 bg-emerald-50 font-semibold';
+                  if (isGivenOpt && !isRight) cls = 'border-rose-400 text-rose-800 bg-rose-50 font-semibold line-through';
+                %>
+                <div class="flex items-start gap-2 border rounded-lg px-3 py-2 text-xs <%= cls %>">
+                  <span class="font-bold shrink-0"><%= key %>.</span>
+                  <span class="leading-relaxed"><%= val %></span>
+                </div>
+                <% }) %>
+              </div>
+              <div class="flex flex-wrap gap-2 text-xs mb-2">
+                <span class="font-semibold text-<%= clr %>-600"><%= isSkip?'Not Attempted':isRight?'Correct':'Wrong' %></span>
+                <% if (!isSkip) { %><span class="text-slate-500">Your: <strong><%= given %></strong></span><% } %>
+                <span class="text-slate-500">Correct: <strong class="text-emerald-600"><%= correct %></strong></span>
+              </div>
+              <% if (q.explanation) { %>
+              <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-800 leading-relaxed">
+                <strong>Explanation:</strong> <%= q.explanation %>
+              </div>
+              <% } %>
+              <% if (q.subject || q.topic || q.difficulty) { %>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <% if(q.subject){%><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full"><%=q.subject%></span><%}%>
+                <% if(q.topic){%><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full"><%=q.topic%></span><%}%>
+                <% if(q.difficulty){%><span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full"><%=q.difficulty%></span><%}%>
+              </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+        <% }) %>
       </div>
     </div>
 
@@ -171,68 +269,50 @@
 </div>
 
 <script>
-// ── Subject-wise Bar Chart ────────────────────────────────────────────────────
 <% if (result.subjectScores && Object.keys(result.subjectScores).length > 0) { %>
 new Chart(document.getElementById('subjectChart'), {
   type: 'bar',
   data: {
     labels: <%- JSON.stringify(Object.keys(result.subjectScores)) %>,
     datasets: [
-      { label: 'Your %', data: <%- JSON.stringify(Object.values(result.subjectScores).map(d=>d.total>0?parseFloat(((d.marks||0)/d.total*100).toFixed(1)):0)) %>, backgroundColor: 'rgba(79,70,229,0.7)', borderRadius: 6 },
-      <% if (topperResult && topperResult.subjectScores && result.subjectScores) { %>
-      { label: 'Topper %', data: <%- JSON.stringify(Object.keys(result.subjectScores).map(s=>{ const d=(topperResult.subjectScores||{})[s]; return d&&d.total>0?parseFloat((d.marks||0)/d.total*100).toFixed(1):0; })) %>, backgroundColor: 'rgba(245,158,11,0.7)', borderRadius: 6 },
+      { label:'Your %', data: <%- JSON.stringify(Object.values(result.subjectScores).map(d=>d.total>0?parseFloat(((d.marks||0)/d.total*100).toFixed(1)):0)) %>, backgroundColor:'rgba(19,19,48,0.8)', borderRadius:5 },
+      <% if (topperResult?.subjectScores) { %>
+      { label:'Topper %', data: <%- JSON.stringify(Object.keys(result.subjectScores).map(s=>{const d=(topperResult.subjectScores||{})[s];return d&&d.total>0?parseFloat((d.marks||0)/d.total*100).toFixed(1):0;})) %>, backgroundColor:'rgba(245,158,11,0.75)', borderRadius:5 },
       <% } %>
     ]
   },
-  options: { responsive:true, plugins:{legend:{position:'top'}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}} }
+  options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:11}}}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}} }
 });
 <% } %>
 
-// ── Trend Line Chart ──────────────────────────────────────────────────────────
 <% if (trend && trend.length > 1) { %>
 new Chart(document.getElementById('trendChart'), {
-  type: 'line',
-  data: {
-    labels: <%- JSON.stringify(trend.map((t,i)=>`Test ${i+1}`)) %>,
-    datasets: [{
-      label: 'Score %',
-      data: <%- JSON.stringify(trend.map(t=>t.totalMarks>0?parseFloat((t.score/t.totalMarks*100).toFixed(1)):0)) %>,
-      borderColor: 'rgb(79,70,229)', backgroundColor: 'rgba(79,70,229,0.1)',
-      tension: 0.4, fill: true, pointRadius: 5
-    }]
+  type:'line',
+  data:{
+    labels:<%- JSON.stringify(trend.map((_,i)=>`T${i+1}`)) %>,
+    datasets:[{ label:'Score %', data:<%- JSON.stringify(trend.map(t=>t.totalMarks>0?parseFloat((t.score/t.totalMarks*100).toFixed(1)):0)) %>, borderColor:'#131330', backgroundColor:'rgba(19,19,48,0.08)', tension:0.4, fill:true, pointRadius:4, borderWidth:2 }]
   },
-  options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}} }
+  options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:10}}}} }
 });
 <% } %>
 
-// ── Question Time Chart ───────────────────────────────────────────────────────
 <% if (result.questionTimings && Object.keys(result.questionTimings).length > 0) { %>
-const timings = <%- JSON.stringify(result.questionTimings) %>;
-const qNums = Object.keys(timings).map((_,i)=>`Q${i+1}`);
-const qTimes = Object.values(timings);
+const timings=<%- JSON.stringify(result.questionTimings) %>;
 new Chart(document.getElementById('timeChart'), {
-  type: 'bar',
-  data: {
-    labels: qNums,
-    datasets: [{ label: 'Seconds', data: qTimes, backgroundColor: 'rgba(16,185,129,0.7)', borderRadius: 4 }]
-  },
-  options: { responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+  type:'bar',
+  data:{ labels:Object.keys(timings).map((_,i)=>`Q${i+1}`), datasets:[{label:'Seconds',data:Object.values(timings),backgroundColor:'rgba(16,185,129,0.7)',borderRadius:4}] },
+  options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,ticks:{font:{size:10}}},x:{ticks:{font:{size:10}}}} }
 });
 <% } %>
 
-// ── Comparison Doughnut ───────────────────────────────────────────────────────
-<% if (topperResult && topperResult.score > 0 && result.rank !== 1) { %>
+<% if (topperResult?.score > 0 && result.rank !== 1) { %>
 new Chart(document.getElementById('comparisonChart'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Your Score', 'Topper Score', 'Remaining'],
-    datasets: [{
-      data: [<%= result.score %>, <%= topperResult.score %>, Math.max(0, <%= result.totalMarks %> - Math.max(<%= result.score %>, <%= topperResult.score %>))],
-      backgroundColor: ['rgba(79,70,229,0.8)','rgba(245,158,11,0.8)','rgba(229,231,235,0.8)'],
-      borderWidth: 0
-    }]
+  type:'doughnut',
+  data:{
+    labels:['Your Score','Topper Score','Remaining'],
+    datasets:[{ data:[<%= result.score %>,<%= topperResult.score %>,Math.max(0,<%= result.totalMarks %>-Math.max(<%= result.score %>,<%= topperResult.score %>))], backgroundColor:['rgba(19,19,48,0.8)','rgba(245,158,11,0.8)','rgba(226,232,240,0.8)'], borderWidth:0 }]
   },
-  options: { responsive:true, plugins:{ legend:{ position:'bottom' } }, cutout:'60%' }
+  options:{ responsive:true, maintainAspectRatio:true, plugins:{legend:{position:'bottom',labels:{boxWidth:12,font:{size:11}}}}, cutout:'60%' }
 });
 <% } %>
 </script>
