@@ -47,7 +47,7 @@
               <h3 class="font-bold text-slate-900 text-sm leading-snug"><%= test.title %></h3>
               <p class="text-xs text-slate-400 mt-1"><%= test.duration %> mins &middot; <%= test.totalMarks %> marks</p>
               <% if (test.endTime) { %><p class="text-[11px] text-rose-500 font-medium mt-1">Due: <%= fmtDate(test.endTime) %></p><% } %>
-              <% if (!started) { %><p class="text-[11px] text-amber-600 font-medium mt-1">Opens: <%= fmtDate(test.startTime) %></p><% } %>
+
             </div>
             <a href="/exam/<%= test.id %>/instructions" class="mt-auto w-full text-center font-semibold bg-navy-950 text-white py-2.5 rounded-xl hover:bg-navy-900 transition-colors text-sm flex items-center justify-center gap-2">
               Start Exam
