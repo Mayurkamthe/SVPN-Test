@@ -434,12 +434,11 @@ function _beforeUnload(e) {
     answer: currentAnswer,
     markForReview: document.getElementById('markReviewCheck')?.checked ? 'true' : 'false',
     timeSpent: 0,
-    autoSubmit: true,
   })], { type: 'application/json' });
   navigator.sendBeacon('/exam/<%= test.id %>/leave', blob);
   // Show browser confirmation so student can cancel accidental navigation
   e.preventDefault();
-  e.returnValue = 'Your answers will be submitted automatically if you leave.';
+  e.returnValue = 'Your current answer will be saved, but please use the in-app Prev/Next buttons to navigate.';
 }
 window.addEventListener('beforeunload', _beforeUnload);
 function saveAndSubmit() {

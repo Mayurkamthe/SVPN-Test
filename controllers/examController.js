@@ -266,9 +266,13 @@ exports.leaveExam = async (req, res) => {
       await Result.findByIdAndUpdate(result._id, { answers, questionTimings, markedForReview });
     }
 
-    // Auto-submit
-    req.body = { auto: 'true' };
-    return exports.submitExam(req, res);
+    // Note: do NOT auto-submit here. This fires on any page unload —
+    // including back/forward navigation and refresh — not just tab close.
+    // Auto-submitting the whole exam on a simple back-navigation was
+    // silently locking students out mid-test. Only the timer expiring
+    // (getQuestion/countdown) or violation thresholds (reportViolation)
+    // should trigger a real auto-submit.
+    return res.sendStatus(204);
   } catch (e) {
     console.error('leaveExam error:', e);
     return res.sendStatus(204);
