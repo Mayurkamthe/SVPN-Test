@@ -28,6 +28,8 @@ let deferredInstallPrompt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   deferredInstallPrompt = e;
+  // Never nag to install while a student is actively taking an exam
+  if (/^\/exam\/[^/]+\/question\//.test(window.location.pathname)) return;
   showInstallBanner();
 });
 
