@@ -2,7 +2,7 @@
   "name": "XYZ College CET Examination Portal",
   "short_name": "CET Exam",
   "description": "Online CET Examination System for XYZ College of Engineering & Technology",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#131330",
@@ -10,6 +10,7 @@
   "categories": ["education", "productivity"],
   "lang": "en-IN",
   "scope": "/",
+  "id": "/",
   "prefer_related_applications": false,
   "icons": [
     { "src": "/icons/icon-72x72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "maskable any" },
@@ -27,24 +28,10 @@
   ],
   "shortcuts": [
     {
-      "name": "My Tests",
-      "short_name": "Tests",
-      "description": "View assigned tests",
-      "url": "/student/tests",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "My Results",
-      "short_name": "Results",
-      "description": "View exam results",
-      "url": "/student/results",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "Admin Dashboard",
-      "short_name": "Admin",
-      "description": "Admin control panel",
-      "url": "/admin/dashboard",
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to your dashboard",
+      "url": "/?source=pwa-shortcut",
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
     }
   ]
