@@ -1,7 +1,7 @@
 <%- include('../partials/head') %>
 <div class="flex h-screen overflow-hidden">
   <%- include('../partials/sidebar-student') %>
-  <main class="ml-64 flex-1 overflow-y-auto">
+  <main class="lg:ml-64 flex-1 overflow-y-auto">
     <header class="sticky top-0 z-20 bg-white border-b px-8 py-4"><h1 class="text-xl font-bold">My Results</h1></header>
     <div class="p-8">
       <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -11,10 +11,10 @@
               <tr><th class="px-6 py-3 text-left">Test</th><th class="px-6 py-3 text-left">Score</th><th class="px-6 py-3 text-left">%</th><th class="px-6 py-3 text-left">Rank</th><th class="px-6 py-3 text-left">Date</th><th class="px-6 py-3 text-left">Action</th></tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-              <% results.forEach(r => { const pct=((r.score/r.totalMarks)*100).toFixed(1) %>
+              <% results.forEach(r => { const total=r.totalMarks||r.testId?.totalMarks||0; const pct=total>0?((r.score/total)*100).toFixed(1):0 %>
               <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 font-medium max-w-xs truncate"><%= r.test?.title %></td>
-                <td class="px-6 py-4 font-bold"><%= r.score %>/<%= r.totalMarks %></td>
+                <td class="px-6 py-4 font-medium max-w-xs truncate"><%= r.testId?.title || '—' %></td>
+                <td class="px-6 py-4 font-bold"><%= r.score %>/<%= total %></td>
                 <td class="px-6 py-4 font-semibold <%= pct>=60?'text-green-600':pct>=40?'text-yellow-600':'text-red-500' %>"><%= pct %>%</td>
                 <td class="px-6 py-4 text-gray-600">#<%= r.rank||'—' %></td>
                 <td class="px-6 py-4 text-xs text-gray-400"><%= r.submittedAt?new Date(r.submittedAt).toLocaleDateString('en-IN'):'—' %></td>
