@@ -35,6 +35,13 @@ function showInstallBanner() {
   // Only show if not already installed
   if (window.matchMedia('(display-mode: standalone)').matches) return;
 
+  // Respect a previous "Not now" dismissal (don't show again for 3 days)
+  const dismissedUntil = parseInt(localStorage.getItem('pwa-dismissed') || '0', 10);
+  if (dismissedUntil && Date.now() < dismissedUntil) return;
+
+  // Avoid stacking duplicate banners if one is already on screen
+  if (document.getElementById('pwa-install-banner')) return;
+
   const banner = document.createElement('div');
   banner.id = 'pwa-install-banner';
   banner.className = 'fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-slate-900 text-white rounded-2xl shadow-2xl p-4 z-50 border border-slate-700 flex items-start gap-3';
