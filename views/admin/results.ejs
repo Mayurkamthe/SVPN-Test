@@ -1,60 +1,116 @@
 <%- include('../partials/head') %>
 <div class="flex h-screen overflow-hidden">
   <%- include('../partials/sidebar-admin') %>
-  <main class="ml-64 flex-1 overflow-y-auto">
-    <header class="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4">
-      <h1 class="text-xl font-bold text-gray-900">All Results</h1>
+  <main class="lg:ml-64 flex-1 overflow-y-auto">
+    <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-slate-200 px-4 lg:px-8 py-4 flex items-center gap-3">
+      <button onclick="openSidebar()" class="lg:hidden text-slate-500 hover:text-slate-800 shrink-0">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-bold text-slate-900">All Results</h1>
+        <p class="text-xs text-slate-400"><%= results.length %> total submissions</p>
+      </div>
+      <a href="/admin/results/export" class="shrink-0 flex items-center gap-1.5 border border-slate-200 text-slate-700 px-3 py-2 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span class="hidden sm:inline">Export Excel</span>
+      </a>
     </header>
-    <div class="p-8">
+
+    <div class="p-4 lg:p-8">
       <%- include('../partials/flash') %>
-      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b flex items-center justify-between">
-          <h3 class="font-semibold text-gray-900">Results (<%= results.length %>)</h3>
-          <input type="text" placeholder="Search..." onkeyup="filterTable(this.value,'resultsTable')"
-            class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 w-48" />
+
+      <!-- Mobile: card list -->
+      <div class="block lg:hidden space-y-3">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" placeholder="Search results…" onkeyup="filterCards(this.value)"
+            class="w-full border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm mb-3"/>
+        </div>
+        <% results.forEach(r => {
+          const pct = r.totalMarks > 0 ? ((r.score/r.totalMarks)*100).toFixed(1) : 0;
+          const clr = pct>=60?'emerald':pct>=40?'amber':'rose';
+        %>
+        <div class="result-card bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="min-w-0">
+              <p class="font-bold text-slate-900 text-sm truncate"><%= r.student?.name %></p>
+              <p class="text-xs text-slate-400 font-mono"><%= r.student?.rollNo %></p>
+            </div>
+            <span class="text-[11px] px-2.5 py-1 rounded-full font-semibold shrink-0
+              <%= r.status==='submitted'?'bg-emerald-100 text-emerald-700':r.status==='auto_submitted'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600' %>">
+              <%= r.status.replace('_',' ') %>
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 truncate mb-3"><%= r.test?.title %></p>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-xs">
+              <span class="font-bold text-slate-900"><%= r.score %>/<%= r.totalMarks %></span>
+              <span class="font-bold text-<%= clr %>-600"><%= pct %>%</span>
+              <span class="text-slate-400">Rank #<%= r.rank||'—' %></span>
+            </div>
+            <div class="flex items-center gap-2">
+              <a href="/results/<%= r.id %>" class="text-xs text-navy-600 font-semibold hover:underline">View</a>
+              <a href="/results/<%= r.id %>/pdf" class="text-xs text-rose-500 font-semibold hover:underline">PDF</a>
+            </div>
+          </div>
+        </div>
+        <% }) %>
+        <% if (!results.length) { %>
+        <div class="py-16 text-center text-slate-400 text-sm">No results yet.</div>
+        <% } %>
+      </div>
+
+      <!-- Desktop: table -->
+      <div class="hidden lg:block bg-white rounded-2xl border border-slate-100 shadow-card overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-50 flex items-center gap-4">
+          <div class="relative flex-1 max-w-xs">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" placeholder="Search results…" onkeyup="filterTable(this.value)"
+              class="w-full border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-sm"/>
+          </div>
         </div>
         <div class="overflow-x-auto">
-          <table class="w-full text-xs sm:text-sm" id="resultsTable">
-            <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
+          <table class="w-full text-sm" id="resultsTable">
+            <thead class="bg-slate-50">
               <tr>
-                <th class="px-6 py-3 text-left">Student</th>
-                <th class="px-6 py-3 text-left">Roll No</th>
-                <th class="px-6 py-3 text-left">Test</th>
-                <th class="px-6 py-3 text-left">Score</th>
-                <th class="px-6 py-3 text-left">%</th>
-                <th class="px-6 py-3 text-left">Rank</th>
-                <th class="px-6 py-3 text-left">Status</th>
-                <th class="px-6 py-3 text-left">Date</th>
-                <th class="px-6 py-3 text-left">Action</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Student</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Roll No</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Test</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Score</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">%</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Rank</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Date</th>
+                <th class="px-6 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
-              <% results.forEach(r => { %>
-              <% const pct = r.totalMarks > 0 ? ((r.score/r.totalMarks)*100).toFixed(1) : 0; %>
-              <tr class="hover:bg-gray-50 transition-colors result-row">
-                <td class="px-6 py-4 font-medium text-gray-900"><%= r.student?.name %></td>
-                <td class="px-6 py-4 font-mono text-gray-500 text-xs"><%= r.student?.rollNo %></td>
-                <td class="px-6 py-4 text-gray-600 max-w-[200px] truncate"><%= r.test?.title %></td>
-                <td class="px-6 py-4 font-bold text-gray-900"><%= r.score %>/<%= r.totalMarks %></td>
+            <tbody class="divide-y divide-slate-50">
+              <% results.forEach(r => {
+                const pct = r.totalMarks > 0 ? ((r.score/r.totalMarks)*100).toFixed(1) : 0;
+                const clr = pct>=60?'emerald':pct>=40?'amber':'rose';
+              %>
+              <tr class="hover:bg-slate-50 transition-colors result-row">
+                <td class="px-6 py-4 font-medium text-slate-900"><%= r.student?.name %></td>
+                <td class="px-6 py-4 font-mono text-slate-500 text-xs"><%= r.student?.rollNo %></td>
+                <td class="px-6 py-4 text-slate-600 max-w-[180px] truncate"><%= r.test?.title %></td>
+                <td class="px-6 py-4 font-bold text-slate-900"><%= r.score %>/<%= r.totalMarks %></td>
+                <td class="px-6 py-4 font-semibold text-<%= clr %>-600"><%= pct %>%</td>
+                <td class="px-6 py-4 text-slate-600">#<%= r.rank||'—' %></td>
                 <td class="px-6 py-4">
-                  <span class="font-semibold <%= pct >= 60 ? 'text-green-600' : pct >= 40 ? 'text-yellow-600' : 'text-red-500' %>"><%= pct %>%</span>
-                </td>
-                <td class="px-6 py-4 text-gray-600"><%= r.rank || '—' %></td>
-                <td class="px-6 py-4">
-                  <span class="text-xs px-2.5 py-1 rounded-full font-medium
-                    <%= r.status === 'submitted' ? 'bg-green-100 text-green-700' : r.status === 'auto_submitted' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600' %>">
+                  <span class="text-[11px] px-2.5 py-1 rounded-full font-semibold
+                    <%= r.status==='submitted'?'bg-emerald-100 text-emerald-700':r.status==='auto_submitted'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600' %>">
                     <%= r.status.replace('_',' ') %>
                   </span>
                 </td>
-                <td class="px-6 py-4 text-gray-400 text-xs"><%= r.submittedAt ? new Date(r.submittedAt).toLocaleDateString('en-IN') : '—' %></td>
-                <td class="px-6 py-4">
-                  <a href="/results/<%= r.id %>" class="text-primary-600 hover:underline text-xs font-medium mr-2">View</a>
-                  <a href="/results/<%= r.id %>/pdf" class="text-red-500 hover:underline text-xs font-medium">PDF</a>
+                <td class="px-6 py-4 text-slate-400 text-xs"><%= r.submittedAt?new Date(r.submittedAt).toLocaleDateString('en-IN'):'—' %></td>
+                <td class="px-6 py-4 flex items-center gap-3">
+                  <a href="/results/<%= r.id %>" class="text-xs text-navy-600 font-semibold hover:underline">View</a>
+                  <a href="/results/<%= r.id %>/pdf" class="text-xs text-rose-500 font-semibold hover:underline">PDF</a>
                 </td>
               </tr>
               <% }) %>
-              <% if (results.length === 0) { %>
-              <tr><td colspan="9" class="px-6 py-12 text-center text-gray-400">No results yet.</td></tr>
+              <% if (!results.length) { %>
+              <tr><td colspan="9" class="px-6 py-16 text-center text-slate-400">No results yet.</td></tr>
               <% } %>
             </tbody>
           </table>
@@ -63,12 +119,17 @@
     </div>
   </main>
 </div>
+
 <script>
-function filterTable(q, id) {
-  document.querySelectorAll(`#${id} .result-row`).forEach(row => {
-    row.style.display = row.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+function filterTable(q) {
+  document.querySelectorAll('#resultsTable .result-row').forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+function filterCards(q) {
+  document.querySelectorAll('.result-card').forEach(c => {
+    c.style.display = c.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
   });
 }
 </script>
-</body>
-</html>
+</body></html>
